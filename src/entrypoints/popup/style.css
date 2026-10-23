@@ -94,6 +94,18 @@ button[aria-pressed='true']:hover:not(:disabled) {
   background-color: var(--netflix-red-hover);
 }
 
+.nomad {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
+}
+
+.nomad:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border-color: var(--text-main);
+}
+
 .transport {
   display: grid;
   grid-template-columns: 1fr 1.6fr 1fr;

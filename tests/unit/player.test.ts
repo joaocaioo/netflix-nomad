@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { clampVolume, readState, runCommand, type MediaLike } from '@/lib/player';
+import { clampVolume, readState, runCommand, type MediaLike, type PageActions } from '@/lib/player';
 
 function fakeMedia(overrides: Partial<MediaLike> = {}): MediaLike {
   // Objeto literal (não MediaLike) para poder alterar `paused`, que é readonly no DOM.
@@ -22,7 +22,16 @@ function fakeMedia(overrides: Partial<MediaLike> = {}): MediaLike {
   return media;
 }
 
-const noControls = vi.fn(() => Promise.resolve(false));
+/** Página sem nenhum botão do player e sem o elemento do Nomad Mode. */
+function fakePage(overrides: Partial<PageActions> = {}): PageActions {
+  return {
+    pressControl: vi.fn(() => Promise.resolve(false)),
+    enterNomadMode: vi.fn(() => false),
+    ...overrides,
+  };
+}
+
+const noControls = fakePage();
 
 describe('runCommand', () => {
   it('devolve NO_VIDEO quando não há vídeo na página', async () => {
@@ -96,13 +105,13 @@ describe('runCommand', () => {
   });
 
   it('pressControl aciona o botão do player e devolve o estado', async () => {
-    const press = vi.fn(() => Promise.resolve(true));
+    const page = fakePage({ pressControl: vi.fn(() => Promise.resolve(true)) });
     const result = await runCommand(
       fakeMedia(),
       { type: 'pressControl', control: 'forward10' },
-      press,
+      page,
     );
-    expect(press).toHaveBeenCalledWith('forward10');
+    expect(page.pressControl).toHaveBeenCalledWith('forward10');
     expect(result).toMatchObject({ ok: true });
   });
 
@@ -112,6 +121,18 @@ describe('runCommand', () => {
       { type: 'pressControl', control: 'next' },
       noControls,
     );
+    expect(result).toEqual({ ok: false, error: 'CONTROL_NOT_FOUND' });
+  });
+
+  it('nomadMode ativa o modo na página e devolve o estado', async () => {
+    const page = fakePage({ enterNomadMode: vi.fn(() => true) });
+    const result = await runCommand(fakeMedia(), { type: 'nomadMode' }, page);
+    expect(page.enterNomadMode).toHaveBeenCalledOnce();
+    expect(result).toMatchObject({ ok: true });
+  });
+
+  it('nomadMode devolve CONTROL_NOT_FOUND quando não há o que remover', async () => {
+    const result = await runCommand(fakeMedia(), { type: 'nomadMode' }, noControls);
     expect(result).toEqual({ ok: false, error: 'CONTROL_NOT_FOUND' });
   });
 });

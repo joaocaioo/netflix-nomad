@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { defineContentScript } from 'wxt/utils/define-content-script';
-import { pressControl } from '@/lib/controls';
+import { enterNomadMode, pressControl } from '@/lib/controls';
 import { isPlayerCommand } from '@/lib/messages';
 import { NETFLIX_MATCHES } from '@/lib/netflix';
 import { runCommand } from '@/lib/player';
@@ -15,9 +15,10 @@ export default defineContentScript({
       // O vídeo é buscado a cada comando: a Netflix é uma SPA e troca o
       // elemento ao navegar entre títulos.
       const video = findVideo();
-      void runCommand(video, message, (control) =>
-        video ? pressControl(control, video) : Promise.resolve(false),
-      ).then(sendResponse);
+      void runCommand(video, message, {
+        pressControl: (control) => (video ? pressControl(control, video) : Promise.resolve(false)),
+        enterNomadMode: () => enterNomadMode(),
+      }).then(sendResponse);
       // `true` mantém o canal aberto até a resposta assíncrona.
       return true;
     });

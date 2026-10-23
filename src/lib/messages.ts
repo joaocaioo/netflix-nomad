@@ -16,7 +16,8 @@ export type PlayerCommand =
   | { type: 'toggleMute' }
   | { type: 'changeVolume'; delta: number }
   | { type: 'setSpeed'; rate: Speed }
-  | { type: 'pressControl'; control: PlayerControl };
+  | { type: 'pressControl'; control: PlayerControl }
+  | { type: 'nomadMode' };
 
 export interface PlayerState {
   paused: boolean;
@@ -36,7 +37,7 @@ export type PlayerErrorCode = 'NO_VIDEO' | 'PLAY_REJECTED' | 'CONTROL_NOT_FOUND'
 export type CommandResult =
   { ok: true; state: PlayerState } | { ok: false; error: PlayerErrorCode };
 
-const SIMPLE_COMMANDS = new Set(['getState', 'togglePlay', 'toggleMute']);
+const SIMPLE_COMMANDS = new Set(['getState', 'togglePlay', 'toggleMute', 'nomadMode']);
 const CONTROLS = new Set<string>([
   'back10',
   'forward10',

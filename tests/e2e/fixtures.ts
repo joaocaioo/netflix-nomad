@@ -12,12 +12,14 @@ const EXTENSION_PATH = path.resolve('.output/chrome-mv3');
  * "Pular abertura" e uma barra de controles que só aparece depois de um
  * mousemove, como na Netflix. Cliques nos botões ficam em `window.clicks`.
  * O vídeo vem de um canvas, então o teste não depende de rede nem de conta.
- * Em /watch/filme não há "Próximo episódio".
+ * Em /watch/filme não há "Próximo episódio". O `#nomad` é o elemento que o
+ * Nomad Mode remove.
  */
 const WATCH_PAGE = `<!doctype html>
 <html><body>
 <video width="320" height="180"></video>
 <div id="overlay"></div>
+<div id="nomad" class="netflix-sans-font-loaded"></div>
 <script>
   const canvas = document.createElement('canvas');
   canvas.width = 320;

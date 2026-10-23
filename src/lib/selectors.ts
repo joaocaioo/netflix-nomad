@@ -9,6 +9,8 @@ import type { PlayerControl } from './messages';
  */
 export const SELECTORS = {
   video: 'video',
+  /** Elemento que o Nomad Mode remove da página. */
+  nomad: '.netflix-sans-font-loaded',
 } as const;
 
 /** `data-uia` de cada controle. Quando há mais de um, vale o primeiro presente. */
@@ -24,6 +26,10 @@ export const CONTROL_UIA = {
 
 export function findVideo(root: ParentNode = document): HTMLVideoElement | null {
   return root.querySelector<HTMLVideoElement>(SELECTORS.video);
+}
+
+export function findNomadTarget(root: ParentNode = document): HTMLElement | null {
+  return root.querySelector<HTMLElement>(SELECTORS.nomad);
 }
 
 export function findControl(

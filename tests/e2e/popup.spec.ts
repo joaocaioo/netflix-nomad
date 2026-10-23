@@ -154,3 +154,17 @@ test('o tempo avança sozinho enquanto o vídeo toca', async ({ openNetflix, ope
   const times = popup.getByTestId('progress').locator('span').first();
   await expect(times).not.toHaveText('0:00', { timeout: 5000 });
 });
+
+test('Nomad Mode remove o elemento da página', async ({ openNetflix, openPopup }) => {
+  const { page, tabId } = await openNetflix('/watch/1');
+  const popup = await openPopup(tabId);
+
+  await expect(page.locator('#nomad')).toHaveCount(1);
+  await popup.getByTestId('nomad-mode').click();
+  await expect(page.locator('#nomad')).toHaveCount(0);
+  await expect(popup.getByRole('alert')).toHaveCount(0);
+
+  // Sem o elemento, um segundo clique só avisa.
+  await popup.getByTestId('nomad-mode').click();
+  await expect(popup.getByRole('alert')).toContainText('não está disponível');
+});

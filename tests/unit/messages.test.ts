@@ -10,6 +10,7 @@ describe('isPlayerCommand', () => {
     { type: 'setSpeed', rate: 1.25 },
     { type: 'pressControl', control: 'skip' },
     { type: 'pressControl', control: 'audioSubtitles' },
+    { type: 'nomadMode' },
   ])('aceita %j', (message) => {
     expect(isPlayerCommand(message)).toBe(true);
   });

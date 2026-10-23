@@ -203,6 +203,18 @@ function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
           testId="exit"
         />
       </div>
+
+      <button
+        type="button"
+        class="nomad"
+        disabled={busy}
+        onClick={() => {
+          run({ type: 'nomadMode' });
+        }}
+        data-testid="nomad-mode"
+      >
+        Nomad Mode
+      </button>
     </>
   );
 }

@@ -1,5 +1,5 @@
 import type { PlayerControl } from './messages';
-import { findControl } from './selectors';
+import { findControl, findNomadTarget } from './selectors';
 
 /**
  * A Netflix esconde a barra de controles quando o mouse fica parado. Um
@@ -61,5 +61,13 @@ export async function pressControl(
   }
   if (!button) return false;
   button.click();
+  return true;
+}
+
+/** Remove da página o elemento do Nomad Mode; devolve `false` se ele não existir. */
+export function enterNomadMode(root: ParentNode = document): boolean {
+  const target = findNomadTarget(root);
+  if (!target) return false;
+  target.remove();
   return true;
 }
