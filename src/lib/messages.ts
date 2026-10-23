@@ -75,6 +75,13 @@ export interface Season {
   episodes: Episode[];
 }
 
+/** Marca de recapitulação, abertura ou créditos, como a Netflix informa. */
+export interface TimeCode {
+  type: string;
+  startOffsetMs: number;
+  endOffsetMs: number;
+}
+
 export interface TitleInfo {
   title: string;
   /** Vazio em filmes. */
@@ -85,6 +92,8 @@ export interface TitleInfo {
   audioTrack: string | null;
   textTracks: Track[];
   textTrack: string | null;
+  /** Não mudam durante o episódio; o popup as usa para mostrar "Pular". */
+  timeCodes: TimeCode[];
 }
 
 /** Erros que o content script pode devolver. */

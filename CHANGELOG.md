@@ -9,6 +9,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Botão Nomad Mode, sempre ativo e disponível em qualquer página da Netflix.
 - Seleção de episódio e de faixas de áudio e legenda direto no popup.
 
+### Alterado
+
+- Os controles do player só aparecem assistindo um filme ou episódio, não no catálogo nem com trailer tocando.
+- O botão "Pular abertura" só aparece quando há o que pular, e diz "Pular recapitulação" durante a recapitulação.
+
 ### Corrigido
 
 - Voltar e avançar 10 segundos, pular abertura, próximo episódio, áudio e legendas e sair do título davam "Esse controle não está disponível" quando a Netflix não desenhava a barra de controles. Agora a extensão usa a API interna do player.

@@ -1,5 +1,6 @@
 import type { BridgeRequest, BridgeResponse } from './bridge';
-import type { TitleInfo } from './messages';
+import type { TimeCode, TitleInfo } from './messages';
+import { findSkip } from './skip';
 
 /**
  * Parte da API interna do player da Netflix que a extensão usa, como ela
@@ -11,12 +12,6 @@ export interface NetflixTrack {
   displayName: string;
 }
 
-export interface NetflixTimeCode {
-  type: string;
-  startOffsetMs: number;
-  endOffsetMs: number;
-}
-
 export interface NetflixPlayer {
   getMovieId(): number;
   getCurrentTime(): number;
@@ -26,7 +21,7 @@ export interface NetflixPlayer {
   /** De 0 a 1. */
   setVolume(volume: number): unknown;
   setPlaybackRate(rate: number): unknown;
-  getTimeCodes(): NetflixTimeCode[] | undefined;
+  getTimeCodes(): TimeCode[] | undefined;
   getAudioTrackList(): NetflixTrack[];
   getAudioTrack(): NetflixTrack | undefined;
   setAudioTrack(track: NetflixTrack): unknown;
@@ -74,9 +69,9 @@ export async function handleRequest(
       player.setPlaybackRate(request.rate);
       return { ok: true };
     case 'skip': {
-      const target = skipTarget(player.getTimeCodes() ?? [], player.getCurrentTime());
-      if (target === null) return { ok: false };
-      player.seek(target);
+      const skip = findSkip(player.getTimeCodes() ?? [], player.getCurrentTime());
+      if (!skip) return { ok: false };
+      player.seek(skip.targetMs);
       return { ok: true };
     }
     case 'setAudioTrack': {
@@ -98,21 +93,6 @@ export async function handleRequest(
   }
 }
 
-/**
- * Para onde "Pular abertura" leva. Recapitulação e abertura vêm como
- * intervalos: dentro de um deles, pula para o fim. Antes da marca "start",
- * onde o episódio de fato começa, pula para ela. `null` se não há o que pular.
- */
-export function skipTarget(timeCodes: NetflixTimeCode[], nowMs: number): number | null {
-  const range = timeCodes.find(
-    (code) => code.type !== 'ending' && code.startOffsetMs <= nowMs && nowMs < code.endOffsetMs,
-  );
-  if (range) return range.endOffsetMs;
-  const start = timeCodes.find((code) => code.type === 'start');
-  if (start && nowMs < start.startOffsetMs) return start.startOffsetMs;
-  return null;
-}
-
 export function readTitle({ player, video }: NetflixPage): TitleInfo {
   const seasons = (video?.seasons ?? []).map((season) => ({
     title: season.title,
@@ -131,6 +111,11 @@ export function readTitle({ player, video }: NetflixPage): TitleInfo {
     audioTrack: player.getAudioTrack()?.trackId ?? null,
     textTracks: player.getTimedTextTrackList().map(toTrack),
     textTrack: player.getTimedTextTrack()?.trackId ?? null,
+    timeCodes: (player.getTimeCodes() ?? []).map(({ type, startOffsetMs, endOffsetMs }) => ({
+      type,
+      startOffsetMs,
+      endOffsetMs,
+    })),
   };
 }
 

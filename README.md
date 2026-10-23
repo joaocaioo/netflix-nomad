@@ -67,12 +67,12 @@ Voltar e avançar 10 segundos ficam sem tecla padrão. Para definir ou trocar as
 
 ## Problemas comuns
 
-| Mensagem                        | Solução                                                 |
-| ------------------------------- | ------------------------------------------------------- |
-| "Extensão ainda não está ativa" | Recarregue a página da Netflix (`F5`).                  |
-| "Nenhum vídeo encontrado"       | Abra um filme ou episódio.                              |
-| "Controle não está disponível"  | Não há o que fazer agora (ex.: pular fora da abertura). |
-| Tela cheia não sai              | Aperte `F11` ou `Esc`.                                  |
+| Mensagem                        | Solução                                                           |
+| ------------------------------- | ----------------------------------------------------------------- |
+| "Extensão ainda não está ativa" | Recarregue a página da Netflix (`F5`).                            |
+| "Abra um filme ou episódio"     | Os controles só aparecem no player, assistindo algo.              |
+| "Controle não está disponível"  | Não há o que fazer agora (ex.: atalho de pular fora da abertura). |
+| Tela cheia não sai              | Aperte `F11` ou `Esc`.                                            |
 
 ## Privacidade
 

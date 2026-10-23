@@ -78,11 +78,16 @@ test('avisa quando a aba não é da Netflix', async ({ context, findTabId, openP
   await expect(popup.getByTestId('toggle-play')).toHaveCount(0);
 });
 
-test('avisa quando a página da Netflix não tem vídeo', async ({ openNetflix, openPopup }) => {
+test('fora do player não mostra os controles, nem com trailer tocando', async ({
+  openNetflix,
+  openPopup,
+}) => {
   const { tabId } = await openNetflix('/browse');
   const popup = await openPopup(tabId);
 
-  await expect(popup.getByRole('alert')).toContainText('Nenhum vídeo encontrado');
+  await expect(popup.getByRole('alert')).toContainText('Abra um filme ou episódio');
+  await expect(popup.getByTestId('toggle-play')).toHaveCount(0);
+  await expect(popup.getByTestId('nomad-mode')).toBeEnabled();
 });
 
 function apiCalls(page: Page) {
@@ -93,11 +98,13 @@ test('avança, volta e pula a abertura pela API do player', async ({ openNetflix
   const { page, tabId } = await openNetflix('/watch/1');
   const popup = await openPopup(tabId);
 
-  // O vídeo começa em 30s, dentro da recapitulação (0–60s).
+  // A API falsa começa em 30s e o <video> nos primeiros segundos: os dois
+  // estão na recapitulação (0–60s), então o botão de pular aparece.
   await popup.getByTestId('forward10').click();
   await expect.poll(() => apiCalls(page)).toEqual(['seek:40000']);
   await popup.getByTestId('back10').click();
   await expect.poll(() => apiCalls(page)).toEqual(['seek:40000', 'seek:30000']);
+  await expect(popup.getByTestId('skip')).toHaveText('Pular recapitulação');
   await popup.getByTestId('skip').click();
   await expect.poll(() => apiCalls(page)).toEqual(['seek:40000', 'seek:30000', 'seek:60000']);
   await expect(popup.getByRole('alert')).toHaveCount(0);
@@ -150,18 +157,15 @@ test('sair do título volta para o catálogo', async ({ openNetflix, openPopup }
   await expect(page).toHaveURL(/\/browse$/);
 });
 
-test('avisa quando o controle não existe no título', async ({ openNetflix, openPopup }) => {
+test('filme não tem episódios nem botão de pular', async ({ openNetflix, openPopup }) => {
   const { page, tabId } = await openNetflix('/watch/filme');
   const popup = await openPopup(tabId);
 
-  // Filme: sem episódios e sem abertura marcada.
+  // Filme: sem episódios e sem abertura marcada, então nem aparece "Pular".
+  await expect(popup.getByTestId('toggle-play')).toBeVisible();
   await expect(popup.getByTestId('next')).toBeDisabled();
   await expect(popup.getByTestId('episode')).toHaveCount(0);
-  await popup.getByTestId('skip').click();
-
-  await expect(popup.getByRole('alert')).toContainText('não está disponível');
-  // O aviso não derruba os outros controles.
-  await expect(popup.getByTestId('toggle-play')).toBeVisible();
+  await expect(popup.getByTestId('skip')).toHaveCount(0);
   expect(await apiCalls(page)).toEqual([]);
 });
 
@@ -209,7 +213,7 @@ test('Nomad Mode funciona em páginas da Netflix sem vídeo', async ({ openNetfl
   const popup = await openPopup(tabId);
 
   // O popup avisa que não há vídeo, mas o Nomad Mode continua ativo.
-  await expect(popup.getByRole('alert')).toContainText('Nenhum vídeo encontrado');
+  await expect(popup.getByRole('alert')).toContainText('Abra um filme ou episódio');
   await expect(popup.getByTestId('nomad-mode')).toBeEnabled();
 
   await popup.getByTestId('nomad-mode').click();

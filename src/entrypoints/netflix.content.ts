@@ -10,7 +10,7 @@ import {
   type NomadResult,
   type TitleResult,
 } from '@/lib/messages';
-import { NETFLIX_MATCHES } from '@/lib/netflix';
+import { NETFLIX_MATCHES, isWatchPath } from '@/lib/netflix';
 import { runCommand, type PageActions } from '@/lib/player';
 import { findVideo } from '@/lib/selectors';
 
@@ -62,7 +62,8 @@ export default defineContentScript({
 
       // O vídeo é buscado a cada comando: a Netflix é uma SPA e troca o
       // elemento ao navegar entre títulos.
-      void runCommand(findVideo(), message, page).then(sendResponse);
+      const video = isWatchPath(location.pathname) ? findVideo() : null;
+      void runCommand(video, message, page).then(sendResponse);
       // `true` mantém o canal aberto até a resposta assíncrona.
       return true;
     });

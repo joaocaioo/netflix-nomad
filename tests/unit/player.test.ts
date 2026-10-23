@@ -33,6 +33,7 @@ const TITLE: TitleInfo = {
   audioTrack: null,
   textTracks: [],
   textTrack: null,
+  timeCodes: [],
 };
 
 /** Página em que a API do player não atende nada. */

@@ -9,6 +9,7 @@ import {
   type Track,
 } from '@/lib/messages';
 import { VOLUME_STEP } from '@/lib/player';
+import { findSkip } from '@/lib/skip';
 import { formatTime } from '@/lib/time';
 import { Icon, type IconName } from './icons';
 import { usePlayer } from './usePlayer';
@@ -84,6 +85,8 @@ function Controls({ player, title, busy, run, onEpisode, onExit, onFullscreen }:
     run(command);
   };
   const nextEpisode = title?.nextEpisode ?? null;
+  // Recalculado a cada atualização do tempo: o botão some fora da abertura.
+  const skip = title ? findSkip(title.timeCodes, player.currentTime * 1000) : null;
   const volumePercent = String(Math.round(player.volume * 100));
 
   return (
@@ -121,13 +124,15 @@ function Controls({ player, title, busy, run, onEpisode, onExit, onFullscreen }:
       </div>
 
       <div class="row">
-        <Button
-          icon="fastForward"
-          label="Pular abertura"
-          onClick={send({ type: 'skip' })}
-          disabled={busy}
-          testId="skip"
-        />
+        {skip && (
+          <Button
+            icon="fastForward"
+            label={skip.kind === 'recap' ? 'Pular recapitulação' : 'Pular abertura'}
+            onClick={send({ type: 'skip' })}
+            disabled={busy}
+            testId="skip"
+          />
+        )}
         <Button
           icon="skipNext"
           label="Próximo episódio"

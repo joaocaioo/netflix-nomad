@@ -89,9 +89,11 @@ const WATCH_PAGE = `<!doctype html>
 </script>
 </body></html>`;
 
+/** Catálogo com um trailer em destaque: tem `<video>`, mas não é o player. */
 const BROWSE_PAGE = `<!doctype html>
 <html><body>
 <h1>Catálogo</h1>
+<video id="trailer" width="320" height="180"></video>
 <div id="nomad" class="netflix-sans-font-loaded"></div>
 </body></html>`;
 

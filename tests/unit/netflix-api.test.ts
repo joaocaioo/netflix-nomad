@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  handleRequest,
-  readTitle,
-  skipTarget,
-  type NetflixPage,
-  type NetflixPlayer,
-} from '@/lib/netflix-api';
+import { handleRequest, readTitle, type NetflixPage, type NetflixPlayer } from '@/lib/netflix-api';
 
 /** Marcas como as que a Netflix devolve num episódio com recapitulação. */
 const TIME_CODES = [
@@ -58,21 +52,6 @@ const SHOW = {
   ],
 };
 
-describe('skipTarget', () => {
-  it('dentro da recapitulação, pula para o fim dela', () => {
-    expect(skipTarget(TIME_CODES, 30000)).toBe(64147);
-  });
-
-  it('entre a recapitulação e o início, pula para o início do episódio', () => {
-    expect(skipTarget(TIME_CODES, 65000)).toBe(66316);
-  });
-
-  it('depois do início não há o que pular', () => {
-    expect(skipTarget(TIME_CODES, 220000)).toBeNull();
-    expect(skipTarget([], 0)).toBeNull();
-  });
-});
-
 describe('readTitle', () => {
   it('monta episódios, próximo episódio e faixas', () => {
     const title = readTitle({ player: fakePlayer(), video: SHOW });
@@ -87,6 +66,7 @@ describe('readTitle', () => {
       ],
       audioTrack: 'A:en',
       textTrack: 'T:pt',
+      timeCodes: TIME_CODES,
     });
     expect(title.seasons.map((season) => season.episodes.length)).toEqual([2, 1]);
   });
