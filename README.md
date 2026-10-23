@@ -23,8 +23,9 @@
 - 🔊 Volume e mudo
 - 🐢 🐇 Velocidade de 0,5× a 2×
 - ⏱️ Tempo atual, duração e progresso
-- 📋 Lista de episódios
-- 💬 Áudio e legendas
+- 📋 Escolher qualquer episódio da série
+- 💬 Trocar áudio e legendas
+- 🧭 Nomad Mode
 - 🖥️ Tela cheia
 - ↩️ Sair do título
 - ⌨️ Atalhos de teclado
@@ -70,7 +71,7 @@ Voltar e avançar 10 segundos ficam sem tecla padrão. Para definir ou trocar as
 | ------------------------------- | ------------------------------------------------------- |
 | "Extensão ainda não está ativa" | Recarregue a página da Netflix (`F5`).                  |
 | "Nenhum vídeo encontrado"       | Abra um filme ou episódio.                              |
-| "Controle não está disponível"  | O botão não existe agora (ex.: pular fora da abertura). |
+| "Controle não está disponível"  | Não há o que fazer agora (ex.: pular fora da abertura). |
 | Tela cheia não sai              | Aperte `F11` ou `Esc`.                                  |
 
 ## Privacidade

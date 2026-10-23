@@ -1,13 +1,21 @@
 import type { ComponentChildren } from 'preact';
 import { ERROR_MESSAGES } from '@/lib/errors';
-import { SPEEDS, type PlayerCommand, type PlayerControl, type PlayerState } from '@/lib/messages';
+import {
+  SEEK_SECONDS,
+  SPEEDS,
+  type PlayerCommand,
+  type PlayerState,
+  type TitleInfo,
+  type Track,
+} from '@/lib/messages';
 import { VOLUME_STEP } from '@/lib/player';
 import { formatTime } from '@/lib/time';
 import { Icon, type IconName } from './icons';
 import { usePlayer } from './usePlayer';
 
 export function App() {
-  const { view, busy, connect, run, fullscreen, nomad, nomadError } = usePlayer();
+  const { view, title, busy, connect, run, playEpisode, exit, fullscreen, nomad, nomadError } =
+    usePlayer();
 
   return (
     <main class="popup">
@@ -32,8 +40,11 @@ export function App() {
         <>
           <Controls
             player={view.player}
+            title={title}
             busy={busy}
             run={(command) => void run(command)}
+            onEpisode={(episodeId) => void playEpisode(episodeId)}
+            onExit={() => void exit()}
             onFullscreen={() => void fullscreen()}
           />
           {view.notice && (
@@ -59,15 +70,20 @@ export function App() {
 
 interface ControlsProps {
   player: PlayerState;
+  /** `null` enquanto carrega ou se o player não informar. */
+  title: TitleInfo | null;
   busy: boolean;
   run: (command: PlayerCommand) => void;
+  onEpisode: (episodeId: number) => void;
+  onExit: () => void;
   onFullscreen: () => void;
 }
 
-function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
-  const press = (control: PlayerControl) => () => {
-    run({ type: 'pressControl', control });
+function Controls({ player, title, busy, run, onEpisode, onExit, onFullscreen }: ControlsProps) {
+  const send = (command: PlayerCommand) => () => {
+    run(command);
   };
+  const nextEpisode = title?.nextEpisode ?? null;
   const volumePercent = String(Math.round(player.volume * 100));
 
   return (
@@ -78,7 +94,7 @@ function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
         <Button
           icon="replay"
           label="−10s"
-          onClick={press('back10')}
+          onClick={send({ type: 'seekBy', seconds: -SEEK_SECONDS })}
           disabled={busy}
           testId="back10"
         />
@@ -98,7 +114,7 @@ function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
           icon="replay"
           flip
           label="+10s"
-          onClick={press('forward10')}
+          onClick={send({ type: 'seekBy', seconds: SEEK_SECONDS })}
           disabled={busy}
           testId="forward10"
         />
@@ -108,15 +124,17 @@ function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
         <Button
           icon="fastForward"
           label="Pular abertura"
-          onClick={press('skip')}
+          onClick={send({ type: 'skip' })}
           disabled={busy}
           testId="skip"
         />
         <Button
           icon="skipNext"
           label="Próximo episódio"
-          onClick={press('next')}
-          disabled={busy}
+          onClick={() => {
+            if (nextEpisode !== null) onEpisode(nextEpisode);
+          }}
+          disabled={busy || nextEpisode === null}
           testId="next"
         />
       </div>
@@ -183,21 +201,57 @@ function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
         </div>
       </Section>
 
+      {title && title.seasons.length > 0 && (
+        <Section title="Episódio">
+          <select
+            class="select"
+            aria-label="Episódio"
+            disabled={busy}
+            value={String(title.currentEpisode)}
+            onChange={(event) => {
+              onEpisode(Number(event.currentTarget.value));
+            }}
+            data-testid="episode"
+          >
+            {title.seasons.map((season) => (
+              <optgroup key={season.title} label={season.title}>
+                {season.episodes.map((episode) => (
+                  <option key={episode.id} value={String(episode.id)}>
+                    {episodeLabel(episode.seq, episode.title)}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </Section>
+      )}
+
+      {title && (
+        <Section title="Áudio e legendas">
+          <TrackSelect
+            label="Áudio"
+            tracks={title.audioTracks}
+            value={title.audioTrack}
+            disabled={busy}
+            onChange={(trackId) => {
+              run({ type: 'setAudioTrack', trackId });
+            }}
+            testId="audio-track"
+          />
+          <TrackSelect
+            label="Legendas"
+            tracks={title.textTracks}
+            value={title.textTrack}
+            disabled={busy}
+            onChange={(trackId) => {
+              run({ type: 'setTextTrack', trackId });
+            }}
+            testId="text-track"
+          />
+        </Section>
+      )}
+
       <div class="row">
-        <Button
-          icon="list"
-          label="Episódios"
-          onClick={press('episodes')}
-          disabled={busy}
-          testId="episodes"
-        />
-        <Button
-          icon="subtitles"
-          label="Áudio e legendas"
-          onClick={press('audioSubtitles')}
-          disabled={busy}
-          testId="audio-subtitles"
-        />
         <Button
           icon="fullscreen"
           label="Tela cheia"
@@ -208,7 +262,7 @@ function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
         <Button
           icon="arrowBack"
           label="Sair do título"
-          onClick={press('exit')}
+          onClick={onExit}
           disabled={busy}
           testId="exit"
         />
@@ -236,6 +290,43 @@ function Progress({ current, duration }: { current: number; duration: number }) 
         <span>{duration > 0 ? formatTime(duration) : '--:--'}</span>
       </div>
     </div>
+  );
+}
+
+/** A Netflix costuma nomear episódios sem título como "Episódio N". */
+function episodeLabel(seq: number, title: string): string {
+  return title === `Episódio ${String(seq)}` ? title : `${String(seq)}. ${title}`;
+}
+
+interface TrackSelectProps {
+  label: string;
+  tracks: Track[];
+  value: string | null;
+  disabled: boolean;
+  onChange: (trackId: string) => void;
+  testId: string;
+}
+
+function TrackSelect({ label, tracks, value, disabled, onChange, testId }: TrackSelectProps) {
+  return (
+    <label class="field">
+      <span class="field__label">{label}</span>
+      <select
+        class="select"
+        disabled={disabled || tracks.length === 0}
+        value={value ?? ''}
+        onChange={(event) => {
+          onChange(event.currentTarget.value);
+        }}
+        data-testid={testId}
+      >
+        {tracks.map((track) => (
+          <option key={track.id} value={track.id}>
+            {track.name}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

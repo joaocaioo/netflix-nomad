@@ -1,16 +1,16 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { sendCommand, toTargetTab } from '@/lib/controller';
-import type { PlayerCommand } from '@/lib/messages';
+import { SEEK_SECONDS, type PlayerCommand } from '@/lib/messages';
 
 /** Atalhos de teclado declarados em `manifest.commands` (wxt.config.ts). */
 const SHORTCUTS: Record<string, PlayerCommand> = {
   'toggle-play': { type: 'togglePlay' },
   'toggle-mute': { type: 'toggleMute' },
-  skip: { type: 'pressControl', control: 'skip' },
-  'next-episode': { type: 'pressControl', control: 'next' },
-  'seek-back': { type: 'pressControl', control: 'back10' },
-  'seek-forward': { type: 'pressControl', control: 'forward10' },
+  skip: { type: 'skip' },
+  'next-episode': { type: 'nextEpisode' },
+  'seek-back': { type: 'seekBy', seconds: -SEEK_SECONDS },
+  'seek-forward': { type: 'seekBy', seconds: SEEK_SECONDS },
 };
 
 export default defineBackground(() => {

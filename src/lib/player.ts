@@ -1,4 +1,5 @@
-import type { CommandResult, PlayerCommand, PlayerControl, PlayerState } from './messages';
+import type { ApiAction } from './bridge';
+import type { CommandResult, PlayerCommand, PlayerState, TitleInfo } from './messages';
 
 /** Parte do `HTMLMediaElement` que a extensão usa. Permite testar sem DOM. */
 export type MediaLike = Pick<
@@ -6,8 +7,14 @@ export type MediaLike = Pick<
   'paused' | 'muted' | 'volume' | 'playbackRate' | 'currentTime' | 'duration' | 'play' | 'pause'
 >;
 
-/** Aciona um botão do player; devolve `false` se ele não existir. */
-export type ControlPresser = (control: PlayerControl) => Promise<boolean>;
+/** O que os comandos fazem na página, fora do `<video>`. Permite testar sem DOM. */
+export interface PageActions {
+  /** Repassa o comando à API do player da Netflix; `false` se ela não o atender. */
+  callApi: (action: ApiAction) => Promise<boolean>;
+  getTitle: () => Promise<TitleInfo | null>;
+  /** Navega a aba para um caminho da Netflix, depois de responder ao popup. */
+  navigate: (path: string) => void;
+}
 
 export const VOLUME_STEP = 0.1;
 
@@ -31,7 +38,7 @@ export function clampVolume(volume: number): number {
 export async function runCommand(
   media: MediaLike | null,
   command: PlayerCommand,
-  press: ControlPresser,
+  page: PageActions,
 ): Promise<CommandResult> {
   if (!media) return { ok: false, error: 'NO_VIDEO' };
 
@@ -49,20 +56,39 @@ export async function runCommand(
         media.pause();
       }
       break;
+    // O estado é lido do `<video>`, mas a mudança passa pela API do player:
+    // a Netflix desfaz o que for alterado direto no elemento.
     case 'toggleMute':
-      media.muted = !media.muted;
+      if (!(await page.callApi({ type: 'setMuted', muted: !media.muted }))) {
+        return { ok: false, error: 'CONTROL_NOT_FOUND' };
+      }
       break;
     case 'changeVolume': {
       const volume = clampVolume(media.volume + command.delta);
-      media.volume = volume;
-      media.muted = volume === 0;
+      const ok =
+        (await page.callApi({ type: 'setVolume', volume })) &&
+        (await page.callApi({ type: 'setMuted', muted: volume === 0 }));
+      if (!ok) return { ok: false, error: 'CONTROL_NOT_FOUND' };
       break;
     }
     case 'setSpeed':
-      media.playbackRate = command.rate;
+    case 'seekBy':
+    case 'skip':
+    case 'setAudioTrack':
+    case 'setTextTrack':
+      if (!(await page.callApi(command))) return { ok: false, error: 'CONTROL_NOT_FOUND' };
       break;
-    case 'pressControl':
-      if (!(await press(command.control))) return { ok: false, error: 'CONTROL_NOT_FOUND' };
+    case 'nextEpisode': {
+      const next = (await page.getTitle())?.nextEpisode;
+      if (!next) return { ok: false, error: 'CONTROL_NOT_FOUND' };
+      page.navigate(`/watch/${String(next)}`);
+      break;
+    }
+    case 'playEpisode':
+      page.navigate(`/watch/${String(command.episodeId)}`);
+      break;
+    case 'exit':
+      page.navigate('/browse');
       break;
     default: {
       const unknown: never = command;

@@ -6,6 +6,9 @@ import type {
   PlayerCommand,
   PlayerErrorCode,
   PlayerState,
+  TitleCommand,
+  TitleInfo,
+  TitleResult,
 } from './messages';
 import { isNetflixUrl } from './netflix';
 
@@ -61,6 +64,12 @@ export function sendCommand(tabId: number, command: PlayerCommand): Promise<Cont
   return send<CommandResult>(tabId, command);
 }
 
+/** Título, episódios e faixas; `null` se o player não responder. */
+export async function sendTitle(tabId: number): Promise<TitleInfo | null> {
+  const result = await send<TitleResult>(tabId, { type: 'getTitle' });
+  return result.ok ? result.title : null;
+}
+
 /** Ativa o Nomad Mode na aba. Não exige vídeo na página. */
 export function sendNomad(tabId: number): Promise<NomadControllerResult> {
   return send<NomadResult>(tabId, { type: 'nomadMode' });
@@ -68,13 +77,13 @@ export function sendNomad(tabId: number): Promise<NomadControllerResult> {
 
 async function send<Result>(
   tabId: number,
-  message: PlayerCommand | NomadCommand,
+  message: PlayerCommand | NomadCommand | TitleCommand,
 ): Promise<Result | { ok: false; error: 'NOT_CONNECTED' }> {
   try {
-    const result = await browser.tabs.sendMessage<PlayerCommand | NomadCommand, Result | undefined>(
-      tabId,
-      message,
-    );
+    const result = await browser.tabs.sendMessage<
+      PlayerCommand | NomadCommand | TitleCommand,
+      Result | undefined
+    >(tabId, message);
     return result ?? { ok: false, error: 'NOT_CONNECTED' };
   } catch {
     return { ok: false, error: 'NOT_CONNECTED' };

@@ -8,17 +8,18 @@ type ExtensionGlobal = typeof globalThis & { chrome: typeof browser };
 const EXTENSION_PATH = path.resolve('.output/chrome-mv3');
 
 /**
- * Página que imita o essencial de /watch: um <video> tocável, o botão
- * "Pular abertura" e uma barra de controles que só aparece depois de um
- * mousemove, como na Netflix. Cliques nos botões ficam em `window.clicks`.
- * O vídeo vem de um canvas, então o teste não depende de rede nem de conta.
- * Em /watch/filme não há "Próximo episódio". O `#nomad` é o elemento que o
+ * Página que imita o essencial de /watch: um <video> tocável e a API interna
+ * do player em `window.netflix`, como na Netflix. Avanço, abertura e faixas
+ * pedidos à API ficam em `window.apiCalls`. O vídeo vem de um canvas, então o teste não
+ * depende de rede nem de conta.
+ *
+ * /watch/1 e /watch/2 são os dois episódios de uma série; /watch/filme é um
+ * filme, sem episódios nem marcas de abertura. O `#nomad` é o elemento que o
  * Nomad Mode remove.
  */
 const WATCH_PAGE = `<!doctype html>
 <html><body>
 <video width="320" height="180"></video>
-<div id="overlay"></div>
 <div id="nomad" class="netflix-sans-font-loaded"></div>
 <script>
   const canvas = document.createElement('canvas');
@@ -29,35 +30,62 @@ const WATCH_PAGE = `<!doctype html>
     ctx.fillStyle = 'hsl(' + (Date.now() / 10) % 360 + ' 80% 50%)';
     ctx.fillRect(0, 0, 320, 180);
   }, 50);
-  document.querySelector('video').srcObject = canvas.captureStream(30);
-
-  window.clicks = [];
-  function button(uia) {
-    const el = document.createElement('button');
-    el.dataset.uia = uia;
-    el.textContent = uia;
-    el.addEventListener('click', () => window.clicks.push(uia));
-    return el;
-  }
-
-  document.getElementById('overlay').append(button('player-skip-intro'));
+  const videoEl = document.querySelector('video');
+  videoEl.srcObject = canvas.captureStream(30);
 
   const isMovie = location.pathname.includes('filme');
-  const controls = ['control-back10', 'control-forward10', 'control-episodes',
-    'control-audio-subtitle', 'control-nav-back'];
-  if (!isMovie) controls.push('control-next');
-
-  let bar = null;
-  let hideTimer;
-  document.addEventListener('mousemove', () => {
-    if (!bar) {
-      bar = document.createElement('div');
-      bar.append(...controls.map(button));
-      document.body.append(bar);
-    }
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => { bar.remove(); bar = null; }, 3000);
-  });
+  const movieId = isMovie ? 99 : Number(location.pathname.split('/').pop());
+  window.apiCalls = [];
+  let time = 30000;
+  const audio = [
+    { trackId: 'A:en', displayName: 'Inglês [original]' },
+    { trackId: 'A:pt', displayName: 'Português' },
+  ];
+  const text = [
+    { trackId: 'T:off', displayName: 'Desligadas' },
+    { trackId: 'T:pt', displayName: 'Português' },
+  ];
+  let audioTrack = audio[0];
+  let textTrack = text[1];
+  const player = {
+    getMovieId: () => movieId,
+    getCurrentTime: () => time,
+    getDuration: () => 1200000,
+    seek: (ms) => { time = ms; apiCalls.push('seek:' + ms); },
+    // Como na Netflix, mudo, volume e velocidade passam pelo player.
+    setMuted: (muted) => { videoEl.muted = muted; },
+    setVolume: (volume) => { videoEl.volume = volume; },
+    setPlaybackRate: (rate) => { videoEl.playbackRate = rate; },
+    getTimeCodes: () => isMovie ? [] : [
+      { type: 'recap', startOffsetMs: 0, endOffsetMs: 60000 },
+      { type: 'start', startOffsetMs: 65000, endOffsetMs: 65000 },
+    ],
+    getAudioTrackList: () => audio,
+    getAudioTrack: () => audioTrack,
+    setAudioTrack: (t) => { audioTrack = t; apiCalls.push('audio:' + t.trackId); },
+    getTimedTextTrackList: () => text,
+    getTimedTextTrack: () => textTrack,
+    setTimedTextTrack: (t) => { textTrack = t; apiCalls.push('text:' + t.trackId); },
+  };
+  const video = isMovie
+    ? { title: 'Filme' }
+    : {
+        title: 'Série',
+        currentEpisode: movieId,
+        seasons: [{ title: 'Temporada 1', episodes: [
+          { id: 1, seq: 1, title: 'Piloto' },
+          { id: 2, seq: 2, title: 'Episódio 2' },
+        ] }],
+      };
+  window.netflix = { appContext: { state: { playerApp: {
+    getAPI: () => ({ videoPlayer: {
+      getAllPlayerSessionIds: () => ['watch-1'],
+      getVideoPlayerBySessionId: () => player,
+    } }),
+    getState: () => ({ videoPlayer: { videoMetadata: {
+      [movieId]: { _metadataObject: { video } },
+    } } }),
+  } } } };
 </script>
 </body></html>`;
 

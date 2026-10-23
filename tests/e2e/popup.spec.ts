@@ -85,49 +85,84 @@ test('avisa quando a página da Netflix não tem vídeo', async ({ openNetflix, 
   await expect(popup.getByRole('alert')).toContainText('Nenhum vídeo encontrado');
 });
 
-function clicks(page: Page) {
-  return page.evaluate(() => (window as unknown as { clicks: string[] }).clicks);
+function apiCalls(page: Page) {
+  return page.evaluate(() => (window as unknown as { apiCalls: string[] }).apiCalls);
 }
 
-test('aciona botões do player mesmo com a barra de controles escondida', async ({
-  openNetflix,
-  openPopup,
-}) => {
+test('avança, volta e pula a abertura pela API do player', async ({ openNetflix, openPopup }) => {
   const { page, tabId } = await openNetflix('/watch/1');
   const popup = await openPopup(tabId);
 
+  // O vídeo começa em 30s, dentro da recapitulação (0–60s).
   await popup.getByTestId('forward10').click();
+  await expect.poll(() => apiCalls(page)).toEqual(['seek:40000']);
   await popup.getByTestId('back10').click();
-  await popup.getByTestId('next').click();
-  await popup.getByTestId('episodes').click();
-  await popup.getByTestId('audio-subtitles').click();
+  await expect.poll(() => apiCalls(page)).toEqual(['seek:40000', 'seek:30000']);
   await popup.getByTestId('skip').click();
+  await expect.poll(() => apiCalls(page)).toEqual(['seek:40000', 'seek:30000', 'seek:60000']);
+  await expect(popup.getByRole('alert')).toHaveCount(0);
+});
+
+test('troca áudio e legendas', async ({ openNetflix, openPopup }) => {
+  const { page, tabId } = await openNetflix('/watch/1');
+  const popup = await openPopup(tabId);
+
+  await expect(popup.getByTestId('audio-track')).toHaveValue('A:en');
+  await expect(popup.getByTestId('text-track')).toHaveValue('T:pt');
+
+  await popup.getByTestId('audio-track').selectOption('A:pt');
+  await popup.getByTestId('text-track').selectOption('T:off');
+
+  await expect.poll(() => apiCalls(page)).toEqual(['audio:A:pt', 'text:T:off']);
+  await expect(popup.getByTestId('audio-track')).toHaveValue('A:pt');
+  await expect(popup.getByTestId('text-track')).toHaveValue('T:off');
+});
+
+test('vai para o próximo episódio e o popup reconecta', async ({ openNetflix, openPopup }) => {
+  const { page, tabId } = await openNetflix('/watch/1');
+  const popup = await openPopup(tabId);
+
+  await expect(popup.getByTestId('episode')).toHaveValue('1');
+  await popup.getByTestId('next').click();
+
+  await expect(page).toHaveURL(/\/watch\/2$/);
+  await expect(popup.getByTestId('episode')).toHaveValue('2', { timeout: 10_000 });
+  // O episódio 2 é o último da temporada.
+  await expect(popup.getByTestId('next')).toBeDisabled();
+});
+
+test('escolhe um episódio na lista', async ({ openNetflix, openPopup }) => {
+  const { page, tabId } = await openNetflix('/watch/2');
+  const popup = await openPopup(tabId);
+
+  await popup.getByTestId('episode').selectOption('1');
+
+  await expect(page).toHaveURL(/\/watch\/1$/);
+  await expect(popup.getByTestId('episode')).toHaveValue('1', { timeout: 10_000 });
+});
+
+test('sair do título volta para o catálogo', async ({ openNetflix, openPopup }) => {
+  const { page, tabId } = await openNetflix('/watch/1');
+  const popup = await openPopup(tabId);
+
   await popup.getByTestId('exit').click();
 
-  await expect
-    .poll(() => clicks(page))
-    .toEqual([
-      'control-forward10',
-      'control-back10',
-      'control-next',
-      'control-episodes',
-      'control-audio-subtitle',
-      'player-skip-intro',
-      'control-nav-back',
-    ]);
-  await expect(popup.getByRole('alert')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/browse$/);
 });
 
 test('avisa quando o controle não existe no título', async ({ openNetflix, openPopup }) => {
   const { page, tabId } = await openNetflix('/watch/filme');
   const popup = await openPopup(tabId);
 
-  await popup.getByTestId('next').click();
+  // Filme: sem episódios e sem abertura marcada.
+  await expect(popup.getByTestId('next')).toBeDisabled();
+  await expect(popup.getByTestId('episode')).toHaveCount(0);
+  await popup.getByTestId('skip').click();
 
   await expect(popup.getByRole('alert')).toContainText('não está disponível');
   // O aviso não derruba os outros controles.
   await expect(popup.getByTestId('toggle-play')).toBeVisible();
-  expect(await clicks(page)).toEqual([]);
+  expect(await apiCalls(page)).toEqual([]);
 });
 
 test('muda a velocidade', async ({ openNetflix, openPopup }) => {

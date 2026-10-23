@@ -16,6 +16,8 @@ export default defineConfig({
     // para ler a URL da aba e conversar com o content script.
     permissions: [],
     host_permissions: NETFLIX_MATCHES,
+    // Script que o content script injeta na página para falar com o player.
+    web_accessible_resources: [{ resources: ['netflix-api.js'], matches: NETFLIX_MATCHES }],
     // O Chrome aceita no máximo 4 atalhos com tecla sugerida; os demais
     // ficam sem tecla e podem ser definidos em chrome://extensions/shortcuts.
     commands: {

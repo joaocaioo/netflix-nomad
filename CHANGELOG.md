@@ -2,6 +2,18 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versões seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+
+- Botão Nomad Mode, sempre ativo e disponível em qualquer página da Netflix.
+- Seleção de episódio e de faixas de áudio e legenda direto no popup.
+
+### Corrigido
+
+- Voltar e avançar 10 segundos, pular abertura, próximo episódio, áudio e legendas e sair do título davam "Esse controle não está disponível" quando a Netflix não desenhava a barra de controles. Agora a extensão usa a API interna do player.
+- O mudo era desfeito pela Netflix logo depois de ativado.
+
 ## [1.0.0] - 2026-10-23
 
 ### Adicionado
