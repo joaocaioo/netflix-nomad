@@ -1,0 +1,201 @@
+:root {
+  --netflix-red: #e50914;
+  --netflix-red-hover: #f40612;
+  --bg-dark: #141414;
+  --bg-panel: rgba(109, 109, 110, 0.4);
+  --bg-panel-hover: rgba(109, 109, 110, 0.7);
+  --text-main: #ffffff;
+  --text-muted: #b3b3b3;
+  --warning: #f5c518;
+  --radius: 6px;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--netflix-red);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+button {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius);
+  padding: 9px 8px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-main);
+  background-color: var(--bg-panel);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  user-select: none;
+  transition:
+    background-color var(--transition),
+    transform 0.1s ease;
+}
+
+button:hover:not(:disabled) {
+  background-color: var(--bg-panel-hover);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+button[aria-pressed='true'],
+button[aria-pressed='true']:hover:not(:disabled) {
+  background-color: var(--text-main);
+  color: var(--bg-dark);
+}
+
+.primary {
+  background-color: var(--netflix-red);
+  font-size: 0.9rem;
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--netflix-red-hover);
+}
+
+.transport {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1fr;
+  gap: 8px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.icon--flip {
+  transform: scaleX(-1);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.section__title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.volume {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.volume__value {
+  text-align: center;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.speeds {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.speeds button {
+  padding: 7px 0;
+  font-size: 0.72rem;
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progress__bar {
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--bg-panel);
+  overflow: hidden;
+}
+
+.progress__fill {
+  height: 100%;
+  background-color: var(--netflix-red);
+}
+
+.progress__times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.status--error {
+  color: var(--text-main);
+}
+
+.status--warning {
+  color: var(--warning);
+  font-size: 0.75rem;
+}

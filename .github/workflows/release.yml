@@ -1,0 +1,33 @@
+name: Release
+
+# Ao enviar uma tag (ex.: v1.0.0), gera os .zip e publica uma Release.
+# Os nomes dos arquivos são fixos para o link "latest/download" do README
+# sempre apontar para a versão mais recente.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run zip && npm run zip:firefox
+      - name: Renomear pacotes
+        run: |
+          mkdir dist
+          cp .output/*-chrome.zip dist/netflix-nomad-chrome.zip
+          cp .output/*-firefox.zip dist/netflix-nomad-firefox.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
