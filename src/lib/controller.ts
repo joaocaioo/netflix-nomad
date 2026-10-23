@@ -1,5 +1,12 @@
 import { browser, type Browser } from 'wxt/browser';
-import type { CommandResult, PlayerCommand, PlayerErrorCode, PlayerState } from './messages';
+import type {
+  CommandResult,
+  NomadCommand,
+  NomadResult,
+  PlayerCommand,
+  PlayerErrorCode,
+  PlayerState,
+} from './messages';
 import { isNetflixUrl } from './netflix';
 
 /** Erros vistos por quem comanda: os do content script mais os de conexão. */
@@ -7,6 +14,8 @@ export type ControllerError = 'NOT_NETFLIX' | 'NOT_CONNECTED' | PlayerErrorCode;
 
 export type ControllerResult =
   { ok: true; state: PlayerState } | { ok: false; error: ControllerError };
+
+export type NomadControllerResult = { ok: true } | { ok: false; error: ControllerError };
 
 export interface TargetTab {
   id: number;
@@ -48,14 +57,23 @@ export async function getTargetTab(search = location.search): Promise<TargetTabR
  * Envia um comando ao content script. Se a aba foi aberta antes da extensão
  * ser instalada ou recarregada, não há ninguém escutando e o envio falha.
  */
-export async function sendCommand(
+export function sendCommand(tabId: number, command: PlayerCommand): Promise<ControllerResult> {
+  return send<CommandResult>(tabId, command);
+}
+
+/** Ativa o Nomad Mode na aba. Não exige vídeo na página. */
+export function sendNomad(tabId: number): Promise<NomadControllerResult> {
+  return send<NomadResult>(tabId, { type: 'nomadMode' });
+}
+
+async function send<Result>(
   tabId: number,
-  command: PlayerCommand,
-): Promise<ControllerResult> {
+  message: PlayerCommand | NomadCommand,
+): Promise<Result | { ok: false; error: 'NOT_CONNECTED' }> {
   try {
-    const result = await browser.tabs.sendMessage<PlayerCommand, CommandResult | undefined>(
+    const result = await browser.tabs.sendMessage<PlayerCommand | NomadCommand, Result | undefined>(
       tabId,
-      command,
+      message,
     );
     return result ?? { ok: false, error: 'NOT_CONNECTED' };
   } catch {

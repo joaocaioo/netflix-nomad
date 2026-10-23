@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPlayerCommand } from '@/lib/messages';
+import { isNomadCommand, isPlayerCommand } from '@/lib/messages';
 
 describe('isPlayerCommand', () => {
   it.each([
@@ -10,7 +10,6 @@ describe('isPlayerCommand', () => {
     { type: 'setSpeed', rate: 1.25 },
     { type: 'pressControl', control: 'skip' },
     { type: 'pressControl', control: 'audioSubtitles' },
-    { type: 'nomadMode' },
   ])('aceita %j', (message) => {
     expect(isPlayerCommand(message)).toBe(true);
   });
@@ -27,7 +26,19 @@ describe('isPlayerCommand', () => {
     { type: 'setSpeed', rate: '1' },
     { type: 'pressControl' },
     { type: 'pressControl', control: 'qualquer-coisa' },
+    // Nomad Mode tem mensagem própria, fora dos comandos do player.
+    { type: 'nomadMode' },
   ])('rejeita %j', (message) => {
     expect(isPlayerCommand(message)).toBe(false);
+  });
+});
+
+describe('isNomadCommand', () => {
+  it('aceita o comando do Nomad Mode', () => {
+    expect(isNomadCommand({ type: 'nomadMode' })).toBe(true);
+  });
+
+  it.each([null, 'nomadMode', {}, { type: 'togglePlay' }])('rejeita %j', (message) => {
+    expect(isNomadCommand(message)).toBe(false);
   });
 });

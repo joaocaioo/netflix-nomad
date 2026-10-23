@@ -16,8 +16,15 @@ export type PlayerCommand =
   | { type: 'toggleMute' }
   | { type: 'changeVolume'; delta: number }
   | { type: 'setSpeed'; rate: Speed }
-  | { type: 'pressControl'; control: PlayerControl }
-  | { type: 'nomadMode' };
+  | { type: 'pressControl'; control: PlayerControl };
+
+/**
+ * O Nomad Mode fica fora de `PlayerCommand` porque não depende de vídeo:
+ * funciona em qualquer página da Netflix e não devolve estado do player.
+ */
+export interface NomadCommand {
+  type: 'nomadMode';
+}
 
 export interface PlayerState {
   paused: boolean;
@@ -32,12 +39,15 @@ export interface PlayerState {
 }
 
 /** Erros que o content script pode devolver. */
-export type PlayerErrorCode = 'NO_VIDEO' | 'PLAY_REJECTED' | 'CONTROL_NOT_FOUND';
+export type PlayerErrorCode =
+  'NO_VIDEO' | 'PLAY_REJECTED' | 'CONTROL_NOT_FOUND' | 'NOMAD_NOT_FOUND';
 
 export type CommandResult =
   { ok: true; state: PlayerState } | { ok: false; error: PlayerErrorCode };
 
-const SIMPLE_COMMANDS = new Set(['getState', 'togglePlay', 'toggleMute', 'nomadMode']);
+export type NomadResult = { ok: true } | { ok: false; error: 'NOMAD_NOT_FOUND' };
+
+const SIMPLE_COMMANDS = new Set(['getState', 'togglePlay', 'toggleMute']);
 const CONTROLS = new Set<string>([
   'back10',
   'forward10',
@@ -66,4 +76,12 @@ export function isPlayerCommand(value: unknown): value is PlayerCommand {
     default:
       return false;
   }
+}
+
+export function isNomadCommand(value: unknown): value is NomadCommand {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as Record<string, unknown>).type === 'nomadMode'
+  );
 }

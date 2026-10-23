@@ -3,6 +3,7 @@ import {
   enterFullscreen,
   getTargetTab,
   sendCommand,
+  sendNomad,
   type ControllerError,
   type TargetTab,
 } from '@/lib/controller';
@@ -24,6 +25,7 @@ const POLL_MS = 1000;
 export function usePlayer() {
   const [view, setView] = useState<View>({ status: 'loading' });
   const [busy, setBusy] = useState(false);
+  const [nomadError, setNomadError] = useState<ControllerError>();
 
   const connect = useCallback(async () => {
     setView({ status: 'loading' });
@@ -88,5 +90,13 @@ export function usePlayer() {
     window.close();
   }, [tab]);
 
-  return { view, busy, connect, run, fullscreen };
+  // Independe de `view`: o Nomad Mode funciona em qualquer página da
+  // Netflix, com ou sem vídeo, então busca a aba por conta própria.
+  const nomad = useCallback(async () => {
+    const target = await getTargetTab();
+    const result = target.ok ? await sendNomad(target.tab.id) : target;
+    setNomadError(result.ok ? undefined : result.error);
+  }, []);
+
+  return { view, busy, connect, run, fullscreen, nomad, nomadError };
 }

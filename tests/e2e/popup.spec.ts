@@ -166,5 +166,37 @@ test('Nomad Mode remove o elemento da página', async ({ openNetflix, openPopup 
 
   // Sem o elemento, um segundo clique só avisa.
   await popup.getByTestId('nomad-mode').click();
-  await expect(popup.getByRole('alert')).toContainText('não está disponível');
+  await expect(popup.getByTestId('nomad-error')).toContainText('Nada para o Nomad Mode remover');
+});
+
+test('Nomad Mode funciona em páginas da Netflix sem vídeo', async ({ openNetflix, openPopup }) => {
+  const { page, tabId } = await openNetflix('/browse');
+  const popup = await openPopup(tabId);
+
+  // O popup avisa que não há vídeo, mas o Nomad Mode continua ativo.
+  await expect(popup.getByRole('alert')).toContainText('Nenhum vídeo encontrado');
+  await expect(popup.getByTestId('nomad-mode')).toBeEnabled();
+
+  await popup.getByTestId('nomad-mode').click();
+  await expect(page.locator('#nomad')).toHaveCount(0);
+  await expect(popup.getByTestId('nomad-error')).toHaveCount(0);
+});
+
+test('Nomad Mode fora da Netflix avisa em vez de agir', async ({
+  context,
+  findTabId,
+  openPopup,
+}) => {
+  await context.route('https://example.com/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<p>outro site</p>' }),
+  );
+  const other = await context.newPage();
+  await other.goto('https://example.com/');
+  await other.bringToFront();
+  const tabId = await findTabId({ active: true, lastFocusedWindow: true });
+  const popup = await openPopup(tabId);
+
+  await expect(popup.getByTestId('nomad-mode')).toBeEnabled();
+  await popup.getByTestId('nomad-mode').click();
+  await expect(popup.getByTestId('nomad-error')).toContainText('Abra uma aba da Netflix');
 });

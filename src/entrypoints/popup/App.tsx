@@ -7,7 +7,7 @@ import { Icon, type IconName } from './icons';
 import { usePlayer } from './usePlayer';
 
 export function App() {
-  const { view, busy, connect, run, fullscreen } = usePlayer();
+  const { view, busy, connect, run, fullscreen, nomad, nomadError } = usePlayer();
 
   return (
     <main class="popup">
@@ -42,6 +42,16 @@ export function App() {
             </p>
           )}
         </>
+      )}
+
+      {/* Sempre ativo: não depende de vídeo nem do estado da conexão. */}
+      <button type="button" class="nomad" onClick={() => void nomad()} data-testid="nomad-mode">
+        Nomad Mode
+      </button>
+      {nomadError && (
+        <p class="status status--warning" role="alert" data-testid="nomad-error">
+          {ERROR_MESSAGES[nomadError]}
+        </p>
       )}
     </main>
   );
@@ -203,18 +213,6 @@ function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
           testId="exit"
         />
       </div>
-
-      <button
-        type="button"
-        class="nomad"
-        disabled={busy}
-        onClick={() => {
-          run({ type: 'nomadMode' });
-        }}
-        data-testid="nomad-mode"
-      >
-        Nomad Mode
-      </button>
     </>
   );
 }

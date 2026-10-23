@@ -61,7 +61,11 @@ const WATCH_PAGE = `<!doctype html>
 </script>
 </body></html>`;
 
-const BROWSE_PAGE = '<!doctype html><html><body><h1>Catálogo</h1></body></html>';
+const BROWSE_PAGE = `<!doctype html>
+<html><body>
+<h1>Catálogo</h1>
+<div id="nomad" class="netflix-sans-font-loaded"></div>
+</body></html>`;
 
 interface Fixtures {
   context: BrowserContext;

@@ -6,13 +6,8 @@ export type MediaLike = Pick<
   'paused' | 'muted' | 'volume' | 'playbackRate' | 'currentTime' | 'duration' | 'play' | 'pause'
 >;
 
-/** O que os comandos fazem na página, fora do `<video>`. Permite testar sem DOM. */
-export interface PageActions {
-  /** Aciona um botão do player; devolve `false` se ele não existir. */
-  pressControl: (control: PlayerControl) => Promise<boolean>;
-  /** Ativa o Nomad Mode; devolve `false` se não houver o que remover. */
-  enterNomadMode: () => boolean;
-}
+/** Aciona um botão do player; devolve `false` se ele não existir. */
+export type ControlPresser = (control: PlayerControl) => Promise<boolean>;
 
 export const VOLUME_STEP = 0.1;
 
@@ -36,7 +31,7 @@ export function clampVolume(volume: number): number {
 export async function runCommand(
   media: MediaLike | null,
   command: PlayerCommand,
-  page: PageActions,
+  press: ControlPresser,
 ): Promise<CommandResult> {
   if (!media) return { ok: false, error: 'NO_VIDEO' };
 
@@ -67,12 +62,7 @@ export async function runCommand(
       media.playbackRate = command.rate;
       break;
     case 'pressControl':
-      if (!(await page.pressControl(command.control))) {
-        return { ok: false, error: 'CONTROL_NOT_FOUND' };
-      }
-      break;
-    case 'nomadMode':
-      if (!page.enterNomadMode()) return { ok: false, error: 'CONTROL_NOT_FOUND' };
+      if (!(await press(command.control))) return { ok: false, error: 'CONTROL_NOT_FOUND' };
       break;
     default: {
       const unknown: never = command;
