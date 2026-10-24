@@ -1,47 +1,114 @@
 import type { ComponentChildren } from 'preact';
+import logo from '@/assets/logo.png';
+import type { ControllerError } from '@/lib/controller';
 import { ERROR_MESSAGES } from '@/lib/errors';
-import { SPEEDS, type PlayerCommand, type PlayerControl, type PlayerState } from '@/lib/messages';
-import { VOLUME_STEP } from '@/lib/player';
-import { formatTime } from '@/lib/time';
-import { Icon, type IconName } from './icons';
+import { SEEK_SECONDS, type PlayerCommand, type PlayerState, type TitleInfo } from '@/lib/messages';
+import { findSkip } from '@/lib/skip';
+import { Icon, type IconName } from '@/ui/icons';
+import { EpisodeSelect, SpeedSelect, TrackSelect, episodeLabel } from '@/ui/selects';
+import { Timeline } from '@/ui/Timeline';
 import { usePlayer } from './usePlayer';
 
+type EmptyAction = 'openNetflix' | 'reload' | 'retry';
+
+/** Ícone e próximo passo de cada erro: cada um leva a uma saída diferente. */
+const EMPTY_STATES: Record<ControllerError, { icon: IconName; action: EmptyAction }> = {
+  NOT_NETFLIX: { icon: 'openInNew', action: 'openNetflix' },
+  NOT_CONNECTED: { icon: 'refresh', action: 'reload' },
+  NO_VIDEO: { icon: 'movie', action: 'retry' },
+  PLAY_REJECTED: { icon: 'info', action: 'retry' },
+  CONTROL_NOT_FOUND: { icon: 'info', action: 'retry' },
+  NOMAD_NOT_FOUND: { icon: 'info', action: 'retry' },
+};
+
+const ACTION_LABELS: Record<EmptyAction, string> = {
+  openNetflix: 'Abrir a Netflix',
+  reload: 'Recarregar a página',
+  retry: 'Tentar de novo',
+};
+
 export function App() {
-  const { view, busy, connect, run, fullscreen } = usePlayer();
+  const {
+    view,
+    title,
+    busy,
+    connect,
+    reloadPage,
+    goToNetflix,
+    run,
+    playEpisode,
+    exit,
+    fullscreen,
+    toggleFullscreen,
+    nomad,
+    nomadError,
+  } = usePlayer();
 
   return (
     <main class="popup">
-      <h1 class="title">Netflix Nomad</h1>
+      <header class="header">
+        {/* Só a altura é fixa: a largura segue a proporção da imagem. */}
+        <img class="header__logo" src={logo} alt="" />
+        <h1 class="header__name">Netflix Nomad</h1>
+      </header>
 
       {view.status === 'loading' && (
-        <p class="status" role="status">
-          Conectando…
-        </p>
+        <div class="empty" role="status">
+          <span class="spinner" aria-hidden="true" />
+          <p>Conectando…</p>
+        </div>
       )}
 
       {view.status === 'error' && (
-        <div class="status status--error" role="alert">
+        <div class="empty" role="alert">
+          <span class="empty__icon">
+            <Icon name={EMPTY_STATES[view.error].icon} />
+          </span>
           <p>{ERROR_MESSAGES[view.error]}</p>
-          <button type="button" onClick={() => void connect()}>
-            Tentar de novo
+          <button
+            type="button"
+            class="button button--primary"
+            onClick={() => {
+              const { action } = EMPTY_STATES[view.error];
+              if (action === 'openNetflix') void goToNetflix();
+              else if (action === 'reload' && view.tab) void reloadPage();
+              else void connect();
+            }}
+            data-testid="empty-action"
+          >
+            {ACTION_LABELS[EMPTY_STATES[view.error].action]}
           </button>
         </div>
       )}
 
       {view.status === 'ready' && (
-        <>
-          <Controls
-            player={view.player}
-            busy={busy}
-            run={(command) => void run(command)}
-            onFullscreen={() => void fullscreen()}
-          />
-          {view.notice && (
-            <p class="status status--warning" role="alert">
-              {ERROR_MESSAGES[view.notice]}
-            </p>
-          )}
-        </>
+        <Controls
+          player={view.player}
+          title={title}
+          busy={busy}
+          notice={view.notice ? ERROR_MESSAGES[view.notice] : null}
+          run={(command) => void run(command)}
+          onEpisode={(episodeId) => void playEpisode(episodeId)}
+          onExit={() => void exit()}
+          fullscreen={fullscreen}
+          onFullscreen={() => void toggleFullscreen()}
+        />
+      )}
+
+      {/* Sempre ativo: não depende de vídeo nem do estado da conexão. */}
+      <button
+        type="button"
+        class="button button--ghost"
+        onClick={() => void nomad()}
+        data-testid="nomad-mode"
+      >
+        <Icon name="explore" />
+        Nomad Mode
+      </button>
+      {nomadError && (
+        <p class="toast" role="alert" data-testid="nomad-error">
+          {ERROR_MESSAGES[nomadError]}
+        </p>
       )}
     </main>
   );
@@ -49,209 +116,253 @@ export function App() {
 
 interface ControlsProps {
   player: PlayerState;
+  /** `null` enquanto carrega ou se o player não informar. */
+  title: TitleInfo | null;
   busy: boolean;
+  notice: string | null;
   run: (command: PlayerCommand) => void;
+  onEpisode: (episodeId: number) => void;
+  onExit: () => void;
+  fullscreen: boolean;
   onFullscreen: () => void;
 }
 
-function Controls({ player, busy, run, onFullscreen }: ControlsProps) {
-  const press = (control: PlayerControl) => () => {
-    run({ type: 'pressControl', control });
+function Controls({
+  player,
+  title,
+  busy,
+  notice,
+  run,
+  onEpisode,
+  onExit,
+  fullscreen,
+  onFullscreen,
+}: ControlsProps) {
+  const send = (command: PlayerCommand) => () => {
+    run(command);
   };
-  const volumePercent = String(Math.round(player.volume * 100));
+  const previousEpisode = title?.previousEpisode ?? null;
+  const nextEpisode = title?.nextEpisode ?? null;
+  // Recalculado a cada atualização do tempo: o botão some fora da abertura.
+  const skip = title ? findSkip(title.timeCodes, player.currentTime * 1000) : null;
+  const volume = player.muted ? 0 : player.volume;
+  const episode = title?.seasons
+    .flatMap((season) => season.episodes.map((item) => ({ season, item })))
+    .find(({ item }) => item.id === title.currentEpisode);
 
   return (
     <>
-      <Progress current={player.currentTime} duration={player.duration} />
+      <section class="card" aria-label="Reprodução">
+        {title?.title && (
+          <div class="now">
+            <p class="now__title">{title.title}</p>
+            {episode && (
+              <p class="now__episode">
+                {episode.season.title} · {episodeLabel(episode.item.seq, episode.item.title)}
+              </p>
+            )}
+          </div>
+        )}
 
-      <div class="transport">
-        <Button
-          icon="replay"
-          label="−10s"
-          onClick={press('back10')}
+        <Timeline
+          current={player.currentTime}
+          duration={player.duration}
           disabled={busy}
-          testId="back10"
+          onSeek={(seconds) => {
+            run({ type: 'seekTo', seconds });
+          }}
         />
+
+        {/* Simétrico, com o play no centro. */}
+        <div class="transport">
+          <IconButton
+            icon="skipPrevious"
+            label="Episódio anterior"
+            onClick={() => {
+              if (previousEpisode !== null) onEpisode(previousEpisode);
+            }}
+            disabled={busy || previousEpisode === null}
+            testId="previous"
+          />
+          <IconButton
+            icon="replay"
+            label={`Voltar ${String(SEEK_SECONDS)} segundos`}
+            onClick={send({ type: 'seekBy', seconds: -SEEK_SECONDS })}
+            disabled={busy}
+            testId="back10"
+          />
+          <button
+            type="button"
+            class="play"
+            disabled={busy}
+            onClick={send({ type: 'togglePlay' })}
+            aria-label={player.paused ? 'Reproduzir' : 'Pausar'}
+            title={player.paused ? 'Reproduzir' : 'Pausar'}
+            data-testid="toggle-play"
+          >
+            <Icon name={player.paused ? 'play' : 'pause'} />
+          </button>
+          <IconButton
+            icon="replay"
+            flip
+            label={`Avançar ${String(SEEK_SECONDS)} segundos`}
+            onClick={send({ type: 'seekBy', seconds: SEEK_SECONDS })}
+            disabled={busy}
+            testId="forward10"
+          />
+          <IconButton
+            icon="skipNext"
+            label="Próximo episódio"
+            onClick={() => {
+              if (nextEpisode !== null) onEpisode(nextEpisode);
+            }}
+            disabled={busy || nextEpisode === null}
+            testId="next"
+          />
+        </div>
+
+        {skip && (
+          <button
+            type="button"
+            class="button button--outline"
+            disabled={busy}
+            onClick={send({ type: 'skip' })}
+            data-testid="skip"
+          >
+            <Icon name="fastForward" />
+            {skip.kind === 'recap' ? 'Pular recapitulação' : 'Pular abertura'}
+          </button>
+        )}
+
+        {notice && (
+          <p class="notice" role="alert">
+            {notice}
+          </p>
+        )}
+      </section>
+
+      <section class="card" aria-label="Volume">
+        <div class="line">
+          <IconButton
+            icon={player.muted ? 'volumeOff' : 'volumeUp'}
+            label={player.muted ? 'Ativar som' : 'Silenciar'}
+            onClick={send({ type: 'toggleMute' })}
+            disabled={busy}
+            pressed={player.muted}
+            testId="toggle-mute"
+          />
+          <input
+            type="range"
+            class="slider"
+            min={0}
+            max={1}
+            step={0.05}
+            value={volume}
+            disabled={busy}
+            aria-label="Volume"
+            style={{ '--value': `${String(volume * 100)}%` }}
+            onChange={(event) => {
+              run({ type: 'setVolume', volume: Number(event.currentTarget.value) });
+            }}
+            data-testid="volume"
+          />
+          <output class="line__value" aria-live="polite" data-testid="volume-value">
+            {player.muted ? 'Mudo' : `${String(Math.round(player.volume * 100))}%`}
+          </output>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Episódio, áudio, legendas e velocidade">
+        {title && title.seasons.length > 0 && (
+          <Field label="Episódio">
+            <EpisodeSelect title={title} disabled={busy} onEpisode={onEpisode} />
+          </Field>
+        )}
+        {title && (
+          <>
+            <TrackSelect
+              label="Áudio"
+              tracks={title.audioTracks}
+              value={title.audioTrack}
+              disabled={busy}
+              onChange={(trackId) => {
+                run({ type: 'setAudioTrack', trackId });
+              }}
+              testId="audio-track"
+            />
+            <TrackSelect
+              label="Legendas"
+              tracks={title.textTracks}
+              value={title.textTrack}
+              disabled={busy}
+              onChange={(trackId) => {
+                run({ type: 'setTextTrack', trackId });
+              }}
+              testId="text-track"
+            />
+          </>
+        )}
+        <SpeedSelect
+          value={player.playbackRate}
+          disabled={busy}
+          onChange={(rate) => {
+            run({ type: 'setSpeed', rate });
+          }}
+        />
+      </section>
+
+      <footer class="footer">
         <button
           type="button"
-          class="primary"
+          class="button"
           disabled={busy}
-          onClick={() => {
-            run({ type: 'togglePlay' });
-          }}
-          data-testid="toggle-play"
-        >
-          <Icon name={player.paused ? 'play' : 'pause'} />
-          {player.paused ? 'Reproduzir' : 'Pausar'}
-        </button>
-        <Button
-          icon="replay"
-          flip
-          label="+10s"
-          onClick={press('forward10')}
-          disabled={busy}
-          testId="forward10"
-        />
-      </div>
-
-      <div class="row">
-        <Button
-          icon="fastForward"
-          label="Pular abertura"
-          onClick={press('skip')}
-          disabled={busy}
-          testId="skip"
-        />
-        <Button
-          icon="skipNext"
-          label="Próximo episódio"
-          onClick={press('next')}
-          disabled={busy}
-          testId="next"
-        />
-      </div>
-
-      <Section title="Volume">
-        <div class="volume">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              run({ type: 'toggleMute' });
-            }}
-            aria-pressed={player.muted}
-            aria-label={player.muted ? 'Ativar som' : 'Silenciar'}
-            title={player.muted ? 'Ativar som' : 'Silenciar'}
-            data-testid="toggle-mute"
-          >
-            <Icon name={player.muted ? 'volumeOff' : 'volumeUp'} />
-          </button>
-          <button
-            type="button"
-            disabled={busy || player.volume <= 0}
-            onClick={() => {
-              run({ type: 'changeVolume', delta: -VOLUME_STEP });
-            }}
-            aria-label="Diminuir volume"
-            data-testid="volume-down"
-          >
-            −
-          </button>
-          <output class="volume__value" aria-live="polite" data-testid="volume">
-            {player.muted ? 'Mudo' : `${volumePercent}%`}
-          </output>
-          <button
-            type="button"
-            disabled={busy || player.volume >= 1}
-            onClick={() => {
-              run({ type: 'changeVolume', delta: VOLUME_STEP });
-            }}
-            aria-label="Aumentar volume"
-            data-testid="volume-up"
-          >
-            +
-          </button>
-        </div>
-      </Section>
-
-      <Section title="Velocidade">
-        <div class="speeds" role="group" aria-label="Velocidade">
-          {SPEEDS.map((rate) => (
-            <button
-              key={rate}
-              type="button"
-              disabled={busy}
-              aria-pressed={player.playbackRate === rate}
-              onClick={() => {
-                run({ type: 'setSpeed', rate });
-              }}
-              data-testid={`speed-${String(rate)}`}
-            >
-              {String(rate).replace('.', ',')}×
-            </button>
-          ))}
-        </div>
-      </Section>
-
-      <div class="row">
-        <Button
-          icon="list"
-          label="Episódios"
-          onClick={press('episodes')}
-          disabled={busy}
-          testId="episodes"
-        />
-        <Button
-          icon="subtitles"
-          label="Áudio e legendas"
-          onClick={press('audioSubtitles')}
-          disabled={busy}
-          testId="audio-subtitles"
-        />
-        <Button
-          icon="fullscreen"
-          label="Tela cheia"
           onClick={onFullscreen}
-          disabled={busy}
-          testId="fullscreen"
-        />
-        <Button
-          icon="arrowBack"
-          label="Sair do título"
-          onClick={press('exit')}
-          disabled={busy}
-          testId="exit"
-        />
-      </div>
+          data-testid="fullscreen"
+        >
+          <Icon name={fullscreen ? 'fullscreenExit' : 'fullscreen'} />
+          {fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+        </button>
+        <button type="button" class="button" disabled={busy} onClick={onExit} data-testid="exit">
+          <Icon name="arrowBack" />
+          Sair do título
+        </button>
+      </footer>
     </>
   );
 }
 
-function Progress({ current, duration }: { current: number; duration: number }) {
-  const percent = duration > 0 ? Math.min(100, (current / duration) * 100) : 0;
+function Field({ label, children }: { label: string; children: ComponentChildren }) {
   return (
-    <div class="progress" data-testid="progress">
-      <div
-        class="progress__bar"
-        role="progressbar"
-        aria-label="Progresso"
-        aria-valuemin={0}
-        aria-valuemax={Math.round(duration)}
-        aria-valuenow={Math.round(current)}
-      >
-        <div class="progress__fill" style={{ width: `${String(percent)}%` }} />
-      </div>
-      <div class="progress__times">
-        <span>{formatTime(current)}</span>
-        <span>{duration > 0 ? formatTime(duration) : '--:--'}</span>
-      </div>
+    <div class="field">
+      <span class="field__label">{label}</span>
+      {children}
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: ComponentChildren }) {
-  return (
-    <section class="section">
-      <h2 class="section__title">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-interface ButtonProps {
+interface IconButtonProps {
   icon: IconName;
   label: string;
   onClick: () => void;
   disabled: boolean;
   testId: string;
   flip?: boolean;
+  pressed?: boolean;
 }
 
-function Button({ icon, label, onClick, disabled, testId, flip }: ButtonProps) {
+function IconButton({ icon, label, onClick, disabled, testId, flip, pressed }: IconButtonProps) {
   return (
-    <button type="button" disabled={disabled} onClick={onClick} data-testid={testId}>
+    <button
+      type="button"
+      class="icon-button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={pressed}
+      title={label}
+      data-testid={testId}
+    >
       <Icon name={icon} flip={flip} />
-      {label}
     </button>
   );
 }

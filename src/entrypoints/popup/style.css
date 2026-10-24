@@ -1,14 +1,16 @@
 :root {
-  --netflix-red: #e50914;
-  --netflix-red-hover: #f40612;
+  --brand: #bb0416;
+  --brand-hover: #d4061a;
   --bg-dark: #141414;
-  --bg-panel: rgba(109, 109, 110, 0.4);
-  --bg-panel-hover: rgba(109, 109, 110, 0.7);
+  --bg-card: #1f1f1f;
+  --bg-panel: rgba(255, 255, 255, 0.08);
+  --bg-panel-hover: rgba(255, 255, 255, 0.16);
+  --border: rgba(255, 255, 255, 0.08);
   --text-main: #ffffff;
-  --text-muted: #b3b3b3;
+  --text-muted: #a3a3a3;
   --warning: #f5c518;
-  --radius: 6px;
-  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius: 8px;
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -18,55 +20,34 @@
 }
 
 body {
-  width: 320px;
+  width: 340px;
   background-color: var(--bg-dark);
   color: var(--text-main);
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
 }
 
 .popup {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px;
-}
-
-.title {
-  text-align: center;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--netflix-red);
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  padding: 12px;
 }
 
 button {
   appearance: none;
   border: none;
-  border-radius: var(--radius);
-  padding: 9px 8px;
   font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-main);
-  background-color: var(--bg-panel);
+  color: inherit;
+  background: none;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
   user-select: none;
-  transition:
-    background-color var(--transition),
-    transform 0.1s ease;
 }
 
-button:hover:not(:disabled) {
-  background-color: var(--bg-panel-hover);
-}
-
-button:active:not(:disabled) {
-  transform: scale(0.96);
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 button:focus-visible {
@@ -74,128 +55,271 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+/* Cabeçalho: logo e nome, centralizados */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 2px 0;
 }
 
-button[aria-pressed='true'],
-button[aria-pressed='true']:hover:not(:disabled) {
+/* Só a altura é fixa, para a logo nunca sair da proporção. */
+.header__logo {
+  flex: none;
+  width: auto;
+  height: 40px;
+}
+
+.header__name {
+  font-family: 'Bebas Neue', 'Helvetica Neue', sans-serif;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 1px;
+  color: var(--brand);
+  /* Na Bebas, as maiúsculas ficam acima do centro da linha; desce para
+     alinhar com o meio da logo. */
+  transform: translateY(0.05em);
+}
+
+.toast {
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background-color: rgba(245, 197, 24, 0.12);
+  color: var(--warning);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Carregando e erro */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 16px;
+  border-radius: var(--radius);
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.45;
+}
+
+.empty__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background-color: rgba(187, 4, 22, 0.14);
+  color: var(--brand);
+}
+
+.empty__icon .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.empty p {
+  max-width: 240px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--bg-panel);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Cartões */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--bg-card);
+}
+
+.now {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.now__title {
+  font-size: 15px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.now__episode {
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  transition:
+    background-color var(--transition),
+    transform 0.1s ease;
+}
+
+.icon-button .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.icon-button:hover:not(:disabled),
+.icon-button[aria-pressed='true'] {
+  background-color: var(--bg-panel-hover);
+}
+
+.icon-button:active:not(:disabled),
+.play:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.play {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background-color: var(--brand);
+  transition:
+    background-color var(--transition),
+    transform 0.1s ease;
+}
+
+.play .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.play:hover:not(:disabled) {
+  background-color: var(--brand-hover);
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  background-color: var(--bg-panel);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background-color var(--transition);
+}
+
+.button:hover:not(:disabled) {
+  background-color: var(--bg-panel-hover);
+}
+
+.button--primary {
+  padding: 9px 18px;
+  background-color: var(--brand);
+  color: var(--text-main);
+}
+
+.button--primary:hover:not(:disabled) {
+  background-color: var(--brand-hover);
+}
+
+.button--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: transparent;
+  color: var(--text-muted);
+}
+
+.button--ghost:hover:not(:disabled) {
+  border-color: var(--text-main);
+  background-color: var(--bg-panel);
+  color: var(--text-main);
+}
+
+.button--outline {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background-color: transparent;
+}
+
+.button--outline:hover:not(:disabled) {
+  border-color: var(--text-main);
   background-color: var(--text-main);
   color: var(--bg-dark);
 }
 
-.primary {
-  background-color: var(--netflix-red);
-  font-size: 0.9rem;
+.notice {
+  color: var(--warning);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
 }
 
-.primary:hover:not(:disabled) {
-  background-color: var(--netflix-red-hover);
-}
+/* Som e velocidade */
 
-.transport {
-  display: grid;
-  grid-template-columns: 1fr 1.6fr 1fr;
+.line {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.row {
+.line__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  color: var(--text-muted);
+}
+
+.line__icon .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.line__value {
+  width: 40px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Rodapé */
+
+.footer {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-}
-
-.icon {
-  width: 18px;
-  height: 18px;
-  fill: currentColor;
-  flex-shrink: 0;
-}
-
-.icon--flip {
-  transform: scaleX(-1);
-}
-
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.section__title {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.volume {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.4fr 1fr;
-  gap: 8px;
-  align-items: center;
-}
-
-.volume__value {
-  text-align: center;
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.speeds {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-}
-
-.speeds button {
-  padding: 7px 0;
-  font-size: 0.72rem;
-}
-
-.progress {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.progress__bar {
-  height: 4px;
-  border-radius: 2px;
-  background-color: var(--bg-panel);
-  overflow: hidden;
-}
-
-.progress__fill {
-  height: 100%;
-  background-color: var(--netflix-red);
-}
-
-.progress__times {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.status {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.status--error {
-  color: var(--text-main);
-}
-
-.status--warning {
-  color: var(--warning);
-  font-size: 0.75rem;
 }

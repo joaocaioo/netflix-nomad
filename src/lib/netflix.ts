@@ -16,3 +16,11 @@ export function isNetflixUrl(url: string | undefined): boolean {
     return false;
   }
 }
+
+/**
+ * Só `/watch/...` é o player. Catálogo e páginas de título também têm
+ * `<video>` (os trailers em destaque), mas ali não há o que controlar.
+ */
+export function isWatchPath(pathname: string): boolean {
+  return pathname.startsWith('/watch/');
+}

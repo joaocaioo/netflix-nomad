@@ -1,0 +1,190 @@
+/*
+ * Estilos dos componentes de `src/ui`, usados no popup e no HUD sobre o
+ * vídeo. As cores vêm das variáveis de cada um (`--brand`, `--bg-panel`
+ * etc.). Tamanhos em px: dentro da página da Netflix, `rem` seguiria a fonte
+ * do site.
+ */
+
+.icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.icon--flip {
+  transform: scaleX(-1);
+}
+
+.select {
+  width: 100%;
+  appearance: none;
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 28px 8px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-main);
+  background: var(--bg-panel)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23b3b3b3'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")
+    no-repeat right 6px center / 18px;
+  cursor: pointer;
+}
+
+.select:hover:not(:disabled) {
+  background-color: var(--bg-panel-hover);
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+}
+
+.select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.select option,
+.select optgroup {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.field__label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Área de clique mais alta que a linha, para ser fácil de acertar. */
+.timeline__hit {
+  position: relative;
+  padding: 6px 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.timeline__hit[aria-disabled='true'] {
+  cursor: default;
+}
+
+.timeline__hit:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.timeline__track {
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--bg-panel);
+  overflow: hidden;
+  transition: height 0.15s ease;
+}
+
+.timeline__hit:hover .timeline__track,
+.timeline__hit--dragging .timeline__track {
+  height: 6px;
+}
+
+.timeline__fill {
+  height: 100%;
+  background-color: var(--brand);
+}
+
+/* A bolinha fica discreta e cresce com o mouse por cima. */
+.timeline__thumb {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background-color: var(--brand);
+  transform: scale(0.8);
+  transition: transform 0.15s ease;
+  pointer-events: none;
+}
+
+.timeline__hit:hover .timeline__thumb,
+.timeline__hit:focus-visible .timeline__thumb,
+.timeline__hit--dragging .timeline__thumb {
+  transform: scale(1.4);
+}
+
+.timeline__tooltip {
+  position: absolute;
+  bottom: calc(100% - 2px);
+  /* Não deixa o balão sair pelas bordas. */
+  left: clamp(22px, var(--left), calc(100% - 22px));
+  transform: translateX(-50%);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.timeline__times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Trilha preenchida até o valor atual, na cor da marca. */
+.slider {
+  flex: 1;
+  height: 4px;
+  appearance: none;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--brand) var(--value, 0%),
+    var(--bg-panel-hover) var(--value, 0%)
+  );
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  appearance: none;
+  border-radius: 50%;
+  background-color: var(--text-main);
+}
+
+.slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--text-main);
+}
+
+.slider:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 4px;
+}
+
+.slider:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
