@@ -3,7 +3,7 @@
 <img src="docs/logo.png" alt="" width="150"><br>
 <img src="docs/wordmark.svg" alt="Netflix Nomad" width="360">
 
-**Controles completos para o player da Netflix: sobre o vídeo e na barra do navegador.**
+**Ative o Nomad Mode para remover o bloqueio de residência da Netflix e recuperar todos os controles do player.**
 
 [![Baixar para Chrome](https://img.shields.io/badge/Baixar-Chrome-BB0416?style=for-the-badge&logo=googlechrome&logoColor=white)](https://github.com/joaocaioo/netflix-nomad/releases/latest/download/netflix-nomad-chrome.zip)
 [![Baixar para Firefox](https://img.shields.io/badge/Baixar-Firefox-BB0416?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://github.com/joaocaioo/netflix-nomad/releases/latest/download/netflix-nomad-firefox.zip)
@@ -17,6 +17,10 @@
 ---
 
 <p align="center">
+  <img src="docs/screenshots/demo.gif" alt="Demonstração: o popup abre, o Nomad Mode tira o aviso da tela e os controles aparecem ao mexer o mouse sobre o vídeo" width="720">
+</p>
+
+<p align="center">
   <img src="docs/screenshots/hud.png" alt="Controles sobre o vídeo, com o painel de episódio, áudio, legendas e velocidade aberto" width="640">
   &nbsp;
   <img src="docs/screenshots/popup.png" alt="Popup da extensão" width="190">
@@ -24,9 +28,15 @@
 
 ## Funcionalidades
 
+### <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/nomad.svg"><img src="docs/icons/light/nomad.svg" width="22" alt=""></picture> Nomad Mode (Fim do bloqueio de residência)
+
+Remove a tela **"Seu aparelho não faz parte da residência Netflix desta conta"** com um clique.
+
+Quando esse aviso é removido na força bruta, o vídeo continua rodando no fundo, mas a Netflix trava a tela e esconde os botões originais. O **Netflix Nomad** resolve as duas coisas: limpa o bloqueio da frente e reconstrói todos os controles para você assistir normalmente.
+
 ### Sobre o vídeo
 
-Os controles aparecem quando o mouse mexe e somem depois de 3 segundos parado, junto com o cursor.
+Com o bloqueio removido, você recupera a navegação normal: basta mexer o mouse sobre o vídeo para os controles reaparecerem. Depois de 3 segundos parado, eles somem junto com o cursor.
 
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/play.svg"><img src="docs/icons/light/play.svg" width="18" alt=""></picture> **Reproduzir e pausar**, também clicando em qualquer parte do vídeo
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/replay.svg"><img src="docs/icons/light/replay.svg" width="18" alt=""></picture> **Voltar e avançar 10 segundos**
@@ -43,7 +53,7 @@ Os controles aparecem quando o mouse mexe e somem depois de 3 segundos parado, j
 ### Na barra do navegador
 
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/popup.svg"><img src="docs/icons/light/popup.svg" width="18" alt=""></picture> **Popup** com os mesmos controles, para usar sem tirar o vídeo da tela
-- <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/nomad.svg"><img src="docs/icons/light/nomad.svg" width="18" alt=""></picture> **Nomad Mode**, sempre disponível em qualquer página da Netflix
+- <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/nomad.svg"><img src="docs/icons/light/nomad.svg" width="18" alt=""></picture> **Nomad Mode**, botão rápido para remover o aviso de residência em qualquer página da Netflix
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/keyboard.svg"><img src="docs/icons/light/keyboard.svg" width="18" alt=""></picture> **Atalhos do navegador**, configuráveis em `chrome://extensions/shortcuts`
 
 ## Instalação
@@ -70,8 +80,8 @@ Baixe a versão nova, extraia por cima da pasta antiga, clique em ↻ no card da
 
 ## Como usar
 
-1. Abra a [Netflix](https://www.netflix.com) e dê play em um filme ou episódio.
-2. Mexa o mouse sobre o vídeo para ver os controles, ou clique no ícone do **Netflix Nomad** na barra.
+1. Abra a [Netflix](https://www.netflix.com). Se o aviso de residência aparecer, clique no ícone da extensão e ative o **Nomad Mode** para limpar a tela.
+2. No filme ou episódio, mexa o mouse sobre o vídeo para usar os controles recuperados — ou controle tudo pelo popup na barra do navegador.
 
 ## Atalhos
 
