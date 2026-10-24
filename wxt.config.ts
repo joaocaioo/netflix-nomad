@@ -11,7 +11,8 @@ export default defineConfig({
   }),
   manifest: ({ browser }) => ({
     name: 'Netflix Nomad',
-    description: 'Controle remoto para o player da Netflix.',
+    description:
+      'Controles completos para o player da Netflix: sobre o vídeo e na barra do navegador.',
     // Sem `tabs`, `scripting` ou `notifications`: o acesso a netflix.com basta
     // para ler a URL da aba e conversar com o content script.
     permissions: [],

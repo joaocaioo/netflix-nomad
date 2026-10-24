@@ -9,8 +9,17 @@ const TIME_CODES = [
 ];
 
 describe('findSkip', () => {
-  it('dentro da recapitulação, pula para o fim dela', () => {
-    expect(findSkip(TIME_CODES, 30000)).toEqual({ kind: 'recap', targetMs: 64147 });
+  it('dentro da recapitulação, pula ela e a abertura que vem logo depois', () => {
+    // O início (66,3 s) está a 2 s do fim da recapitulação (64,1 s).
+    expect(findSkip(TIME_CODES, 30000)).toEqual({ kind: 'recap', targetMs: 66316 });
+  });
+
+  it('com o início longe do fim da recapitulação, pula só a recapitulação', () => {
+    const codes = [
+      { type: 'recap', startOffsetMs: 0, endOffsetMs: 60000 },
+      { type: 'start', startOffsetMs: 120000, endOffsetMs: 120000 },
+    ];
+    expect(findSkip(codes, 30000)).toEqual({ kind: 'recap', targetMs: 60000 });
   });
 
   it('entre a recapitulação e o início, pula a abertura', () => {

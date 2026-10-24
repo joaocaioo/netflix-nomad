@@ -15,6 +15,7 @@ export type Speed = (typeof SPEEDS)[number];
  */
 export type PlayerApiCommand =
   | { type: 'seekBy'; seconds: number }
+  | { type: 'seekTo'; seconds: number }
   | { type: 'skip' }
   | { type: 'setSpeed'; rate: Speed }
   | { type: 'setAudioTrack'; trackId: string }
@@ -25,6 +26,8 @@ export type PlayerCommand =
   | { type: 'togglePlay' }
   | { type: 'toggleMute' }
   | { type: 'changeVolume'; delta: number }
+  /** De 0 a 1. */
+  | { type: 'setVolume'; volume: number }
   | { type: 'nextEpisode' }
   | { type: 'playEpisode'; episodeId: number }
   | { type: 'exit' }
@@ -36,6 +39,21 @@ export type PlayerCommand =
  */
 export interface NomadCommand {
   type: 'nomadMode';
+}
+
+/**
+ * Tela cheia é da janela do navegador, então quem atende é o service worker.
+ * O popup informa a janela; o content script não precisa, o service worker
+ * a descobre pela aba que mandou.
+ */
+export interface WindowCommand {
+  type: 'setFullscreen';
+  /**
+   * Entrar ou sair, nunca "alternar": quem pede sabe o que vê. O estado que
+   * o Chrome informa pode estar errado (ex.: depois de sair pelo F11).
+   */
+  fullscreen: boolean;
+  windowId?: number;
 }
 
 /**
@@ -87,6 +105,7 @@ export interface TitleInfo {
   /** Vazio em filmes. */
   seasons: Season[];
   currentEpisode: number | null;
+  previousEpisode: number | null;
   nextEpisode: number | null;
   audioTracks: Track[];
   audioTrack: string | null;
@@ -129,6 +148,12 @@ export function isPlayerCommand(value: unknown): value is PlayerCommand {
       return typeof message.delta === 'number' && Number.isFinite(message.delta);
     case 'seekBy':
       return typeof message.seconds === 'number' && Number.isFinite(message.seconds);
+    case 'seekTo':
+      return (
+        typeof message.seconds === 'number' && message.seconds >= 0 && message.seconds < Infinity
+      );
+    case 'setVolume':
+      return typeof message.volume === 'number' && message.volume >= 0 && message.volume <= 1;
     case 'setSpeed':
       return SPEEDS.some((speed) => speed === message.rate);
     case 'setAudioTrack':
@@ -143,6 +168,14 @@ export function isPlayerCommand(value: unknown): value is PlayerCommand {
 
 export function isNomadCommand(value: unknown): value is NomadCommand {
   return hasType(value, 'nomadMode');
+}
+
+export function isWindowCommand(value: unknown): value is WindowCommand {
+  if (!hasType(value, 'setFullscreen')) return false;
+  const { fullscreen, windowId } = value as Record<string, unknown>;
+  return (
+    typeof fullscreen === 'boolean' && (windowId === undefined || Number.isSafeInteger(windowId))
+  );
 }
 
 export function isTitleCommand(value: unknown): value is TitleCommand {

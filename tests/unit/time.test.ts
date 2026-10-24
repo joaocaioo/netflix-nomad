@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTime } from '@/lib/time';
+import { formatTime, pointerRatio } from '@/lib/time';
 
 describe('formatTime', () => {
   it.each([
@@ -12,5 +12,22 @@ describe('formatTime', () => {
     [-3, '0:00'],
   ])('formatTime(%d) = %s', (seconds, expected) => {
     expect(formatTime(seconds)).toBe(expected);
+  });
+});
+
+describe('pointerRatio', () => {
+  it.each([
+    [100, 0],
+    [150, 0.25],
+    [200, 0.5],
+    [300, 1],
+    [50, 0],
+    [400, 1],
+  ])('clientX %d numa barra de 100 a 300 = %d', (clientX, expected) => {
+    expect(pointerRatio(clientX, 100, 200)).toBe(expected);
+  });
+
+  it('barra sem largura vale 0', () => {
+    expect(pointerRatio(10, 0, 0)).toBe(0);
   });
 });

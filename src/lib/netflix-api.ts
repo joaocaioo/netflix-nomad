@@ -16,6 +16,8 @@ export interface NetflixPlayer {
   getMovieId(): number;
   getCurrentTime(): number;
   getDuration(): number;
+  /** Até onde áudio e vídeo já estão carregados. */
+  getBufferedTime(): number;
   seek(timeMs: number): unknown;
   setMuted(muted: boolean): unknown;
   /** De 0 a 1. */
@@ -59,6 +61,9 @@ export async function handleRequest(
       player.seek(Math.min(Math.max(0, target), player.getDuration()));
       return { ok: true };
     }
+    case 'seekTo':
+      player.seek(Math.round(Math.min(Math.max(0, request.seconds * 1000), player.getDuration())));
+      return { ok: true };
     case 'setMuted':
       player.setMuted(request.muted);
       return { ok: true };
@@ -78,6 +83,7 @@ export async function handleRequest(
       const track = player.getAudioTrackList().find((t) => t.trackId === request.trackId);
       if (!track) return { ok: false };
       await player.setAudioTrack(track);
+      void resync(player);
       return { ok: true };
     }
     case 'setTextTrack': {
@@ -93,6 +99,34 @@ export async function handleRequest(
   }
 }
 
+/** Quanto áudio novo esperar no buffer antes de ressincronizar, e por quanto tempo. */
+const RESYNC_AHEAD_MS = 2000;
+const RESYNC_TIMEOUT_MS = 3000;
+const RESYNC_POLL_MS = 100;
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+/**
+ * Trocar o áudio com o vídeo tocando deixa áudio e vídeo dessincronizados
+ * até o próximo seek. A Netflix descarta o áudio do buffer, faz um seek e só
+ * depois baixa o áudio novo, que entra fora de sincronia. Esperar o áudio
+ * novo chegar e fazer um seek para o ponto atual realinha os dois sem
+ * recarregar nada (o buffer continua lá).
+ */
+export async function resync(player: NetflixPlayer, wait = sleep): Promise<void> {
+  const deadline = Date.now() + RESYNC_TIMEOUT_MS;
+  while (
+    player.getBufferedTime() - player.getCurrentTime() < RESYNC_AHEAD_MS &&
+    Date.now() < deadline
+  ) {
+    await wait(RESYNC_POLL_MS);
+  }
+  player.seek(player.getCurrentTime());
+}
+
 export function readTitle({ player, video }: NetflixPage): TitleInfo {
   const seasons = (video?.seasons ?? []).map((season) => ({
     title: season.title,
@@ -106,6 +140,7 @@ export function readTitle({ player, video }: NetflixPage): TitleInfo {
     title: video?.title ?? '',
     seasons,
     currentEpisode,
+    previousEpisode: index === -1 ? null : (episodes[index - 1]?.id ?? null),
     nextEpisode: index === -1 ? null : (episodes[index + 1]?.id ?? null),
     audioTracks: player.getAudioTrackList().map(toTrack),
     audioTrack: player.getAudioTrack()?.trackId ?? null,

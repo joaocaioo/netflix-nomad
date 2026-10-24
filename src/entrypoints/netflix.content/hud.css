@@ -1,0 +1,242 @@
+/*
+ * HUD sobre o vídeo. Fica num Shadow DOM, isolado do CSS da Netflix. A
+ * camada cobre a tela toda mas não captura o mouse: só os controles visíveis
+ * recebem cliques. Tamanhos em px, porque `rem` seguiria a fonte da Netflix.
+ */
+
+.hud {
+  --brand: #bb0416;
+  --bg-dark: #141414;
+  --bg-panel: rgba(255, 255, 255, 0.12);
+  --bg-panel-hover: rgba(255, 255, 255, 0.24);
+  --text-main: #fff;
+  --text-muted: #c4c4c4;
+  --radius: 6px;
+  --transition: 0.2s ease;
+
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+.hud button {
+  font: inherit;
+}
+
+.hud__surface {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+.hud__fade {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.hud--visible .hud__fade {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hud__top {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 28px 56px;
+  background: linear-gradient(rgba(0, 0, 0, 0.7), transparent);
+}
+
+.hud__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hud__title strong {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.hud__title span {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.hud__bottom {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 72px 28px 16px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+.hud__timeline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hud__timeline .timeline {
+  flex: 1;
+}
+
+.hud__remaining,
+.hud__time {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hud__time {
+  margin-left: 8px;
+}
+
+.hud__bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hud__group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud__button {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.hud__button .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.hud__button:hover,
+.hud__button[aria-pressed='true'] {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.hud__button:active {
+  transform: scale(0.92);
+}
+
+.hud__button:focus-visible,
+.hud__skip:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+}
+
+.hud__volume {
+  flex: none;
+  width: 96px;
+  margin: 0 6px;
+}
+
+/* Fica fora do .hud__fade: aparece sempre que há o que pular. */
+.hud__skip {
+  position: absolute;
+  right: 28px;
+  bottom: 140px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  background-color: rgba(20, 20, 20, 0.75);
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.hud__skip:hover {
+  background-color: var(--text-main);
+  color: #000;
+}
+
+.hud__notice {
+  position: absolute;
+  left: 50%;
+  bottom: 140px;
+  margin: 0;
+  padding: 8px 14px;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #f5c518;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.hud__panel {
+  position: absolute;
+  right: 28px;
+  bottom: 118px;
+  width: 360px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background-color: rgba(24, 24, 24, 0.97);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+.hud__panel-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.hud__panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.hud__panel .field {
+  grid-template-columns: 84px 1fr;
+}
+
+.hud__panel .field__label {
+  font-size: 13px;
+}
+
+.hud__panel .select {
+  padding-top: 9px;
+  padding-bottom: 9px;
+  font-size: 13px;
+}

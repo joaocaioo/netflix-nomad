@@ -63,8 +63,11 @@ export async function runCommand(
         return { ok: false, error: 'CONTROL_NOT_FOUND' };
       }
       break;
-    case 'changeVolume': {
-      const volume = clampVolume(media.volume + command.delta);
+    case 'changeVolume':
+    case 'setVolume': {
+      const volume = clampVolume(
+        command.type === 'setVolume' ? command.volume : media.volume + command.delta,
+      );
       const ok =
         (await page.callApi({ type: 'setVolume', volume })) &&
         (await page.callApi({ type: 'setMuted', muted: volume === 0 }));
@@ -72,6 +75,7 @@ export async function runCommand(
       break;
     }
     case 'setSpeed':
+    case 'seekTo':
     case 'seekBy':
     case 'skip':
     case 'setAudioTrack':

@@ -28,6 +28,7 @@ const TITLE: TitleInfo = {
   title: 'Série',
   seasons: [],
   currentEpisode: 1,
+  previousEpisode: null,
   nextEpisode: 2,
   audioTracks: [],
   audioTrack: null,
@@ -124,6 +125,18 @@ describe('runCommand', () => {
     expect(result).toMatchObject({ ok: true, state: { muted: true, volume: 0 } });
   });
 
+  it('setVolume define o volume e muta no zero', async () => {
+    const media = fakeMedia({ muted: true, volume: 0.2 });
+    const page = apiOn(media);
+    await expect(
+      runCommand(media, { type: 'setVolume', volume: 0.75 }, page),
+    ).resolves.toMatchObject({ ok: true, state: { muted: false, volume: 0.75 } });
+    await expect(runCommand(media, { type: 'setVolume', volume: 0 }, page)).resolves.toMatchObject({
+      ok: true,
+      state: { muted: true, volume: 0 },
+    });
+  });
+
   it('setSpeed altera a velocidade do vídeo', async () => {
     const media = fakeMedia();
     const result = await runCommand(media, { type: 'setSpeed', rate: 1.5 }, apiOn(media));
@@ -133,6 +146,7 @@ describe('runCommand', () => {
 
   it.each([
     { type: 'seekBy', seconds: 10 },
+    { type: 'seekTo', seconds: 754 },
     { type: 'skip' },
     { type: 'setSpeed', rate: 1.5 },
     { type: 'setAudioTrack', trackId: 'A:pt' },

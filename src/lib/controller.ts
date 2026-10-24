@@ -9,8 +9,9 @@ import type {
   TitleCommand,
   TitleInfo,
   TitleResult,
+  WindowCommand,
 } from './messages';
-import { isNetflixUrl } from './netflix';
+import { NETFLIX_MATCHES, isNetflixUrl } from './netflix';
 
 /** Erros vistos por quem comanda: os do content script mais os de conexão. */
 export type ControllerError = 'NOT_NETFLIX' | 'NOT_CONNECTED' | PlayerErrorCode;
@@ -91,10 +92,40 @@ async function send<Result>(
 }
 
 /**
- * Coloca a janela do navegador em tela cheia. `video.requestFullscreen()`
- * não funciona aqui: exige um gesto do usuário na página, e o clique no
- * popup não conta. Na página /watch o player já ocupa a janela inteira.
+ * Entra ou sai da tela cheia da janela; quem faz é o service worker. Sem
+ * `windowId`, vale a janela da aba que pediu (content script). Se a extensão
+ * foi recarregada com a aba aberta, o pedido falha em silêncio.
  */
-export async function enterFullscreen(windowId: number): Promise<void> {
-  await browser.windows.update(windowId, { state: 'fullscreen' });
+export async function setFullscreen(fullscreen: boolean, windowId?: number): Promise<void> {
+  const command: WindowCommand = { type: 'setFullscreen', fullscreen, windowId };
+  try {
+    await browser.runtime.sendMessage(command);
+  } catch {
+    // Sem service worker para responder: nada a fazer.
+  }
+}
+
+export async function isFullscreen(windowId: number): Promise<boolean> {
+  try {
+    return (await browser.windows.get(windowId)).state === 'fullscreen';
+  } catch {
+    return false;
+  }
+}
+
+const NETFLIX_HOME = 'https://www.netflix.com/browse';
+
+/** Vai para uma aba da Netflix que já esteja aberta, ou abre uma nova. */
+export async function openNetflix(): Promise<void> {
+  const [existing] = await browser.tabs.query({ url: NETFLIX_MATCHES });
+  if (existing?.id === undefined) {
+    await browser.tabs.create({ url: NETFLIX_HOME });
+    return;
+  }
+  await browser.tabs.update(existing.id, { active: true });
+  await browser.windows.update(existing.windowId, { focused: true });
+}
+
+export async function reloadTab(tabId: number): Promise<void> {
+  await browser.tabs.reload(tabId);
 }

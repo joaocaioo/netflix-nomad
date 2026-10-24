@@ -2,7 +2,14 @@
   "name": "netflix-nomad",
   "version": "1.0.0",
   "private": true,
-  "description": "Controle remoto para o player da Netflix: reprodução, avanço, episódios, velocidade, volume e atalhos.",
+  "description": "Controles completos para o player da Netflix: sobre o vídeo e na barra do navegador.",
+  "license": "MIT",
+  "author": "joaocaioo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joaocaioo/netflix-nomad.git"
+  },
+  "homepage": "https://github.com/joaocaioo/netflix-nomad#readme",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -22,6 +29,7 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
   },
   "dependencies": {
+    "@fontsource/bebas-neue": "^5.3.0",
     "preact": "^10.29.8"
   },
   "devDependencies": {

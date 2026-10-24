@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNomadCommand, isPlayerCommand, isTitleCommand } from '@/lib/messages';
+import { isNomadCommand, isPlayerCommand, isTitleCommand, isWindowCommand } from '@/lib/messages';
 
 describe('isPlayerCommand', () => {
   it.each([
@@ -9,6 +9,9 @@ describe('isPlayerCommand', () => {
     { type: 'changeVolume', delta: -0.1 },
     { type: 'setSpeed', rate: 1.25 },
     { type: 'seekBy', seconds: -10 },
+    { type: 'seekTo', seconds: 754.5 },
+    { type: 'setVolume', volume: 0 },
+    { type: 'setVolume', volume: 1 },
     { type: 'skip' },
     { type: 'nextEpisode' },
     { type: 'playEpisode', episodeId: 82158511 },
@@ -30,6 +33,10 @@ describe('isPlayerCommand', () => {
     { type: 'setSpeed', rate: 16 },
     { type: 'setSpeed', rate: '1' },
     { type: 'seekBy', seconds: Infinity },
+    { type: 'seekTo', seconds: -1 },
+    { type: 'seekTo', seconds: Infinity },
+    { type: 'setVolume', volume: 1.5 },
+    { type: 'setVolume', volume: '0.5' },
     { type: 'playEpisode', episodeId: 0 },
     { type: 'playEpisode', episodeId: 1.5 },
     { type: 'playEpisode', episodeId: '82158511' },
@@ -60,5 +67,23 @@ describe('isTitleCommand', () => {
 
   it.each([null, 'getTitle', { type: 'getState' }])('rejeita %j', (message) => {
     expect(isTitleCommand(message)).toBe(false);
+  });
+});
+
+describe('isWindowCommand', () => {
+  it.each([
+    { type: 'setFullscreen', fullscreen: true },
+    { type: 'setFullscreen', fullscreen: false, windowId: 3 },
+  ])('aceita %j', (message) => {
+    expect(isWindowCommand(message)).toBe(true);
+  });
+
+  it.each([
+    null,
+    { type: 'toggleFullscreen' },
+    { type: 'setFullscreen' },
+    { type: 'setFullscreen', fullscreen: true, windowId: 'x' },
+  ])('rejeita %j', (message) => {
+    expect(isWindowCommand(message)).toBe(false);
   });
 });

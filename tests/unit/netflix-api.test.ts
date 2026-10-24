@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { handleRequest, readTitle, type NetflixPage, type NetflixPlayer } from '@/lib/netflix-api';
+import {
+  handleRequest,
+  readTitle,
+  resync,
+  type NetflixPage,
+  type NetflixPlayer,
+} from '@/lib/netflix-api';
 
 /** Marcas como as que a Netflix devolve num episódio com recapitulação. */
 const TIME_CODES = [
@@ -22,6 +28,7 @@ function fakePlayer(overrides: Partial<NetflixPlayer> = {}): NetflixPlayer {
     getMovieId: () => 11,
     getCurrentTime: () => 220000,
     getDuration: () => 2618240,
+    getBufferedTime: () => 460000,
     seek: vi.fn(),
     setMuted: vi.fn(),
     setVolume: vi.fn(),
@@ -58,6 +65,7 @@ describe('readTitle', () => {
     expect(title).toMatchObject({
       title: 'O Conto da Aia',
       currentEpisode: 11,
+      previousEpisode: 10,
       // O próximo do último episódio da temporada é o primeiro da seguinte.
       nextEpisode: 20,
       audioTracks: [
@@ -74,6 +82,8 @@ describe('readTitle', () => {
   it('no último episódio não há próximo', () => {
     const title = readTitle({ player: fakePlayer(), video: { ...SHOW, currentEpisode: 20 } });
     expect(title.nextEpisode).toBeNull();
+    // O anterior do primeiro da temporada é o último da anterior.
+    expect(title.previousEpisode).toBe(11);
   });
 
   it('em filmes não há episódios', () => {
@@ -86,6 +96,15 @@ describe('handleRequest', () => {
   function page(player = fakePlayer()): NetflixPage {
     return { player, video: SHOW };
   }
+
+  it('seekTo vai para o ponto da linha do tempo, em milissegundos inteiros', async () => {
+    const seek = vi.fn();
+    const player = fakePlayer({ seek });
+    await handleRequest(page(player), { type: 'seekTo', seconds: 754.5004 });
+    await handleRequest(page(player), { type: 'seekTo', seconds: 99999 });
+    expect(seek).toHaveBeenNthCalledWith(1, 754500);
+    expect(seek).toHaveBeenNthCalledWith(2, 2618240);
+  });
 
   it('seekBy anda em milissegundos a partir do tempo atual', async () => {
     const seek = vi.fn();
@@ -140,6 +159,12 @@ describe('handleRequest', () => {
     expect(setPlaybackRate).toHaveBeenCalledWith(1.25);
   });
 
+  it('trocar o áudio ressincroniza com um seek no ponto atual', async () => {
+    const seek = vi.fn();
+    await handleRequest(page(fakePlayer({ seek })), { type: 'setAudioTrack', trackId: 'A:pt' });
+    expect(seek).toHaveBeenCalledWith(220000);
+  });
+
   it('recusa faixa que não existe', async () => {
     await expect(
       handleRequest(page(), { type: 'setAudioTrack', trackId: 'A:xx' }),
@@ -149,5 +174,22 @@ describe('handleRequest', () => {
   it('getTitle devolve o título', async () => {
     const response = await handleRequest(page(), { type: 'getTitle' });
     expect(response).toMatchObject({ ok: true, title: { title: 'O Conto da Aia' } });
+  });
+});
+
+describe('resync', () => {
+  it('espera o áudio novo chegar ao buffer antes do seek', async () => {
+    const seek = vi.fn();
+    // Buffer vazio logo depois da troca; o áudio novo chega na terceira olhada.
+    const buffered = [220000, 220500, 250000];
+    const player = fakePlayer({ seek, getBufferedTime: () => buffered.shift() ?? 250000 });
+    const wait = vi.fn(() => {
+      expect(seek).not.toHaveBeenCalled();
+      return Promise.resolve();
+    });
+
+    await resync(player, wait);
+    expect(wait).toHaveBeenCalledTimes(2);
+    expect(seek).toHaveBeenCalledWith(220000);
   });
 });

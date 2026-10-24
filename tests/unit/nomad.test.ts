@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it } from 'vitest';
-import { enterNomadMode } from '@/lib/controls';
+import { enterNomadMode } from '@/lib/nomad';
 
 afterEach(() => {
   document.body.replaceChildren();
