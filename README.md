@@ -17,6 +17,10 @@
 ---
 
 <p align="center">
+  <img src="docs/screenshots/demo.gif" alt="Demonstração: o popup abre, o Nomad Mode tira o aviso da tela e os controles aparecem ao mexer o mouse sobre o vídeo" width="720">
+</p>
+
+<p align="center">
   <img src="docs/screenshots/hud.png" alt="Controles sobre o vídeo, com o painel de episódio, áudio, legendas e velocidade aberto" width="640">
   &nbsp;
   <img src="docs/screenshots/popup.png" alt="Popup da extensão" width="190">
