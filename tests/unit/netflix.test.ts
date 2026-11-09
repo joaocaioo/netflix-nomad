@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNetflixUrl, isWatchPath } from '@/lib/netflix';
+import { isNetflixUrl, isWatchPath, watchId } from '@/lib/netflix';
 
 describe('isNetflixUrl', () => {
   it.each([
@@ -34,4 +34,15 @@ describe('isWatchPath', () => {
       expect(isWatchPath(pathname)).toBe(false);
     },
   );
+});
+
+describe('watchId', () => {
+  it('lê o id do player', () => {
+    expect(watchId('/watch/82158510')).toBe(82158510);
+  });
+
+  it('é null fora do player ou com id não numérico', () => {
+    expect(watchId('/browse')).toBeNull();
+    expect(watchId('/watch/filme')).toBeNull();
+  });
 });

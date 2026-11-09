@@ -200,3 +200,77 @@ test('não aparece fora do player', async ({ openNetflix }) => {
   await page.mouse.move(200, 200);
   await expect(page.getByTestId('hud')).toHaveCount(0);
 });
+
+test('com metadados atrasados, o título e o próximo episódio aparecem quando chegam', async ({
+  openNetflix,
+}) => {
+  const { page } = await openNetflix('/watch/1?lazy');
+  await page.mouse.move(200, 200);
+  // Antes, o HUD guardava o título vazio da primeira resposta e não pedia de novo.
+  await expect(page.getByTestId('hud')).toContainText('Temporada 1 · 1. Piloto');
+  await expect(page.getByTestId('next')).toBeVisible();
+});
+
+test('esconde os controles da Netflix e os devolve ao desligar', async ({
+  openNetflix,
+  openPopup,
+}) => {
+  const { page, tabId } = await openNetflix('/watch/1');
+  await expect(page.locator('#native-controls')).toBeHidden();
+
+  const popup = await openPopup(tabId);
+  await popup.getByTestId('power').click();
+  await expect(popup.getByTestId('disabled')).toBeVisible();
+  await expect(page.getByTestId('hud')).toHaveCount(0);
+  await expect(page.locator('#native-controls')).toBeVisible();
+
+  // Desligada, nem os atalhos da extensão respondem.
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(() => apiCalls(page)).toEqual([]);
+
+  await popup.getByTestId('enable').click();
+  await expect(page.getByTestId('hud')).toHaveCount(1);
+  await expect(page.locator('#native-controls')).toBeHidden();
+});
+
+test('pula a abertura sozinho quando a opção está ligada', async ({ openNetflix, openPopup }) => {
+  const { page, tabId } = await openNetflix('/watch/1');
+  const popup = await openPopup(tabId);
+  await popup.getByTestId('auto-skip').click();
+  await expect(popup.getByTestId('auto-skip')).toHaveAttribute('aria-checked', 'true');
+
+  // Só pula com o vídeo tocando; recapitulação e abertura de uma vez.
+  await page.mouse.move(200, 200);
+  await page.keyboard.press('Space');
+  await expect.poll(() => apiCalls(page)).toEqual(['seek:65000']);
+  await expect(page.getByTestId('hud')).toContainText('Recapitulação pulada');
+});
+
+test('nos créditos, conta 5 s e vai sozinho para o próximo episódio', async ({ openNetflix }) => {
+  const { page } = await openNetflix('/watch/1');
+  await page.evaluate(async () => {
+    const video = document.querySelector('video');
+    if (!video) throw new Error('sem <video>');
+    video.currentTime = 1150;
+    await video.play();
+  });
+
+  const nextUp = page.getByTestId('next-up');
+  await expect(nextUp).toContainText('A seguir · Episódio 2');
+  await expect(page).toHaveURL(/\/watch\/2$/, { timeout: 10_000 });
+});
+
+test('"Assistir créditos" cancela a contagem', async ({ openNetflix }) => {
+  const { page } = await openNetflix('/watch/1');
+  await page.evaluate(async () => {
+    const video = document.querySelector('video');
+    if (!video) throw new Error('sem <video>');
+    video.currentTime = 1150;
+    await video.play();
+  });
+
+  await page.getByTestId('next-up-dismiss').click();
+  await expect(page.getByTestId('next-up')).toHaveCount(0);
+  await page.waitForTimeout(6000);
+  await expect(page).toHaveURL(/\/watch\/1$/);
+});

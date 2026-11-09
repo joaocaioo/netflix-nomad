@@ -11,7 +11,7 @@ const TIME_CODES = [
 describe('findSkip', () => {
   it('dentro da recapitulação, pula ela e a abertura que vem logo depois', () => {
     // O início (66,3 s) está a 2 s do fim da recapitulação (64,1 s).
-    expect(findSkip(TIME_CODES, 30000)).toEqual({ kind: 'recap', targetMs: 66316 });
+    expect(findSkip(TIME_CODES, 30000)).toEqual({ kind: 'recap', targetMs: 66316, marked: true });
   });
 
   it('com o início longe do fim da recapitulação, pula só a recapitulação', () => {
@@ -19,16 +19,16 @@ describe('findSkip', () => {
       { type: 'recap', startOffsetMs: 0, endOffsetMs: 60000 },
       { type: 'start', startOffsetMs: 120000, endOffsetMs: 120000 },
     ];
-    expect(findSkip(codes, 30000)).toEqual({ kind: 'recap', targetMs: 60000 });
+    expect(findSkip(codes, 30000)).toEqual({ kind: 'recap', targetMs: 60000, marked: true });
   });
 
-  it('entre a recapitulação e o início, pula a abertura', () => {
-    expect(findSkip(TIME_CODES, 65000)).toEqual({ kind: 'intro', targetMs: 66316 });
+  it('entre a recapitulação e o início, pula a abertura (sem marca própria)', () => {
+    expect(findSkip(TIME_CODES, 65000)).toEqual({ kind: 'intro', targetMs: 66316, marked: false });
   });
 
   it('abertura marcada como intervalo', () => {
     const intro = [{ type: 'intro', startOffsetMs: 120000, endOffsetMs: 180000 }];
-    expect(findSkip(intro, 150000)).toEqual({ kind: 'intro', targetMs: 180000 });
+    expect(findSkip(intro, 150000)).toEqual({ kind: 'intro', targetMs: 180000, marked: true });
     expect(findSkip(intro, 100000)).toBeNull();
   });
 

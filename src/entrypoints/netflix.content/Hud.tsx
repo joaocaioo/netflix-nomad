@@ -1,16 +1,19 @@
 import type { RefObject } from 'preact';
-import { useEffect, useRef, useState, type MutableRef } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState, type MutableRef } from 'preact/hooks';
 import { ERROR_MESSAGES } from '@/lib/errors';
 import { setFullscreen } from '@/lib/controller';
-import { SEEK_SECONDS } from '@/lib/messages';
+import { SEEK_SECONDS, type TitleInfo } from '@/lib/messages';
 import { VOLUME_STEP, type PageActions } from '@/lib/player';
 import { findPageControlAt } from '@/lib/selectors';
-import { findSkip } from '@/lib/skip';
+import { findSkip, type Skip } from '@/lib/skip';
 import { setSubtitleLift } from '@/lib/subtitles';
 import { formatTime } from '@/lib/time';
 import { Icon, type IconName } from '@/ui/icons';
 import { EpisodeSelect, SpeedSelect, TrackSelect, episodeLabel } from '@/ui/selects';
+import { Switch } from '@/ui/Switch';
 import { Timeline } from '@/ui/Timeline';
+import { useSettings } from '@/ui/useSettings';
+import { useAutoSkip, useNextUp, type NextUp } from './useAutomations';
 import { useHud } from './useHud';
 
 /** Quanto tempo o HUD fica na tela depois que o mouse para. */
@@ -26,7 +29,8 @@ const CONTROL_KEYS = new Set([' ', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp'
  * O botão de pular abertura aparece sempre que há o que pular, como na Netflix.
  */
 export function Hud({ page }: { page: PageActions }) {
-  const { player, title, notice, run } = useHud(page);
+  const { player, title, notice, info, showInfo, run } = useHud(page);
+  const { settings, update } = useSettings();
   const active = useActivity(IDLE_MS);
   const fullscreen = useWindowFullscreen();
   const [hovering, setHovering] = useState(false);
@@ -66,12 +70,25 @@ export function Hud({ page }: { page: PageActions }) {
     [],
   );
 
+  const skip = title && player ? findSkip(title.timeCodes, player.currentTime * 1000) : null;
+  useAutoSkip(settings?.autoSkip ?? false, skip, player, title?.movieId ?? null, (target: Skip) => {
+    void run({ type: 'skip' }).then((ok) => {
+      if (ok) showInfo(target.kind === 'recap' ? 'Recapitulação pulada' : 'Abertura pulada');
+    });
+  });
+  const playEpisode = useCallback(
+    (episodeId: number) => {
+      void run({ type: 'playEpisode', episodeId });
+    },
+    [run],
+  );
+  // Com o painel aberto o card some; a contagem espera, para o episódio não
+  // trocar sem a pessoa ver.
+  const nextUp = useNextUp(settings?.autoNext ?? false, !panel, player, title, playEpisode);
+
   if (!player) return null;
 
-  const skip = title ? findSkip(title.timeCodes, player.currentTime * 1000) : null;
-  const episode = title?.seasons
-    .flatMap((season) => season.episodes.map((item) => ({ season, item })))
-    .find(({ item }) => item.id === title.currentEpisode);
+  const episode = findEpisode(title, title?.currentEpisode ?? null);
   const toggleFullscreen = () => {
     void setFullscreen(!fullscreen);
   };
@@ -147,7 +164,7 @@ export function Hud({ page }: { page: PageActions }) {
           onClick={() => void run({ type: 'exit' })}
           testId="exit"
         />
-        {title && (
+        {title?.title && (
           <div class="hud__title">
             <strong>{title.title}</strong>
             {episode && (
@@ -171,10 +188,26 @@ export function Hud({ page }: { page: PageActions }) {
         </button>
       )}
 
-      {notice && (
+      {nextUp && !panel && (
+        <NextUpCard
+          nextUp={nextUp}
+          episode={findEpisode(title, nextUp.episodeId)}
+          onPlay={() => {
+            playEpisode(nextUp.episodeId);
+          }}
+        />
+      )}
+
+      {notice ? (
         <p class="hud__notice" role="alert">
           {ERROR_MESSAGES[notice]}
         </p>
+      ) : (
+        info && (
+          <p class="hud__notice hud__notice--info" role="status">
+            {info}
+          </p>
+        )
       )}
 
       {panel && (
@@ -223,6 +256,22 @@ export function Hud({ page }: { page: PageActions }) {
               onChange={(rate) => void run({ type: 'setSpeed', rate })}
             />
           </div>
+          {settings && (
+            <div class="hud__panel-body hud__panel-body--settings">
+              <Switch
+                label="Pular abertura automaticamente"
+                checked={settings.autoSkip}
+                onChange={(autoSkip) => void update({ autoSkip })}
+                testId="hud-auto-skip"
+              />
+              <Switch
+                label="Próximo episódio automático"
+                checked={settings.autoNext}
+                onChange={(autoNext) => void update({ autoNext })}
+                testId="hud-auto-next"
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -322,6 +371,61 @@ export function Hud({ page }: { page: PageActions }) {
             />
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Episódio pelo id, com a temporada; `undefined` em filmes ou se não estiver na lista. */
+function findEpisode(title: TitleInfo | null, episodeId: number | null) {
+  if (!title || episodeId === null) return undefined;
+  for (const season of title.seasons) {
+    const item = season.episodes.find((candidate) => candidate.id === episodeId);
+    if (item) return { season, item };
+  }
+  return undefined;
+}
+
+interface NextUpCardProps {
+  nextUp: NextUp;
+  episode: ReturnType<typeof findEpisode>;
+  onPlay: () => void;
+}
+
+/**
+ * Chamada para o próximo episódio nos créditos. Com contagem, uma barra
+ * enche na base do botão e, cheia, o episódio troca sozinho. Fica fora do
+ * `.hud__fade`: aparece mesmo com o HUD escondido.
+ */
+function NextUpCard({ nextUp, episode, onPlay }: NextUpCardProps) {
+  const counting = nextUp.progress !== null;
+  return (
+    <div class="hud__next" role="group" aria-label="Próximo episódio" data-testid="next-up">
+      {episode && (
+        <span class="hud__next-label">
+          A seguir · {episodeLabel(episode.item.seq, episode.item.title)}
+        </span>
+      )}
+      <div class="hud__next-actions">
+        <button
+          type="button"
+          class="hud__next-play"
+          style={{ '--progress': String(nextUp.progress ?? 0) }}
+          onClick={onPlay}
+          data-testid="next-up-play"
+        >
+          {counting && <span class="hud__next-fill" aria-hidden="true" />}
+          <Icon name="play" />
+          {counting ? 'Próximo episódio' : 'Assistir próximo'}
+        </button>
+        <button
+          type="button"
+          class="hud__next-dismiss"
+          onClick={nextUp.dismiss}
+          data-testid="next-up-dismiss"
+        >
+          Assistir créditos
+        </button>
       </div>
     </div>
   );

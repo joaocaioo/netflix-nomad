@@ -13,9 +13,11 @@ import {
   type NomadResult,
   type TitleResult,
 } from '@/lib/messages';
+import { installNativeControlsHiding, setNativeControlsHidden } from '@/lib/native-controls';
 import { NETFLIX_MATCHES, isWatchPath } from '@/lib/netflix';
 import { runCommand, type PageActions } from '@/lib/player';
 import { findVideo } from '@/lib/selectors';
+import { getSettings, watchSettings } from '@/lib/settings';
 import { installSubtitleLift } from '@/lib/subtitles';
 import '@/ui/shared.css';
 import { Hud } from './Hud';
@@ -55,8 +57,12 @@ export default defineContentScript({
       },
     };
 
+    // Desligada, a extensão não responde a nada: popup e atalhos de teclado
+    // (que passam por aqui) ficam sem efeito e a Netflix fica como é.
+    let enabled = (await getSettings()).enabled;
+
     browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (sender.id !== browser.runtime.id) return false;
+      if (sender.id !== browser.runtime.id || !enabled) return false;
 
       // O Nomad Mode não depende do vídeo: vale em qualquer página da Netflix.
       if (isNomadCommand(message)) {
@@ -100,6 +106,7 @@ export default defineContentScript({
     );
 
     installSubtitleLift();
+    installNativeControlsHiding();
     const hud = await createShadowRootUi(ctx, {
       name: 'netflix-nomad-hud',
       position: 'inline',
@@ -116,16 +123,24 @@ export default defineContentScript({
       },
     });
 
-    // O HUD só existe no player; some no catálogo e volta ao abrir um título.
+    // O HUD só existe no player e com a extensão ligada; some no catálogo
+    // e volta ao abrir um título. Os controles da Netflix somem junto com
+    // ele e voltam quando ele sai, para o player nunca ficar sem controles.
     let mounted = false;
     const syncHud = () => {
-      const watching = isWatchPath(location.pathname);
-      if (watching === mounted) return;
-      mounted = watching;
-      if (watching) hud.mount();
+      const active = enabled && isWatchPath(location.pathname);
+      if (active === mounted) return;
+      mounted = active;
+      setNativeControlsHidden(active);
+      if (active) hud.mount();
       else hud.remove();
     };
     syncHud();
     ctx.setInterval(syncHud, WATCH_CHECK_MS);
+    const stopWatching = watchSettings((settings) => {
+      enabled = settings.enabled;
+      syncHud();
+    });
+    ctx.onInvalidated(stopWatching);
   },
 });

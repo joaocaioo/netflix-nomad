@@ -1,13 +1,19 @@
 import type { ComponentChildren } from 'preact';
+import { browser } from 'wxt/browser';
 import logo from '@/assets/logo.png';
 import type { ControllerError } from '@/lib/controller';
 import { ERROR_MESSAGES } from '@/lib/errors';
 import { SEEK_SECONDS, type PlayerCommand, type PlayerState, type TitleInfo } from '@/lib/messages';
+import type { Settings } from '@/lib/settings';
 import { findSkip } from '@/lib/skip';
+import { latestDownloadUrl } from '@/lib/update';
 import { Icon, type IconName } from '@/ui/icons';
 import { EpisodeSelect, SpeedSelect, TrackSelect, episodeLabel } from '@/ui/selects';
+import { Switch } from '@/ui/Switch';
 import { Timeline } from '@/ui/Timeline';
+import { useSettings } from '@/ui/useSettings';
 import { usePlayer } from './usePlayer';
+import { useUpdate } from './useUpdate';
 
 type EmptyAction = 'openNetflix' | 'reload' | 'retry';
 
@@ -28,6 +34,76 @@ const ACTION_LABELS: Record<EmptyAction, string> = {
 };
 
 export function App() {
+  const { settings, update } = useSettings();
+  const latest = useUpdate();
+  const version = browser.runtime.getManifest().version;
+
+  return (
+    <main class="popup">
+      <header class="header">
+        {/* Só a altura é fixa: a largura segue a proporção da imagem. */}
+        <img class="header__logo" src={logo} alt="" />
+        <h1 class="header__name">Netflix Nomad</h1>
+        <div class="header__end">
+          {settings && (
+            <Switch
+              ariaLabel={settings.enabled ? 'Desligar o Netflix Nomad' : 'Ligar o Netflix Nomad'}
+              checked={settings.enabled}
+              onChange={(enabled) => void update({ enabled })}
+              testId="power"
+            />
+          )}
+        </div>
+      </header>
+
+      {settings &&
+        (settings.enabled ? (
+          <Player settings={settings} update={(patch) => void update(patch)} />
+        ) : (
+          <div class="empty" data-testid="disabled">
+            <span class="empty__icon empty__icon--muted">
+              <Icon name="power" />
+            </span>
+            <p>Desligado. A Netflix está com o player original dela.</p>
+            <button
+              type="button"
+              class="button button--primary"
+              onClick={() => void update({ enabled: true })}
+              data-testid="enable"
+            >
+              Ligar
+            </button>
+          </div>
+        ))}
+
+      {/* Discreto: só a versão, e um ponto quando há uma mais nova. */}
+      <p class="version">
+        <span data-testid="version">v{version}</span>
+        {latest && (
+          <a
+            class="version__update"
+            href={latestDownloadUrl(import.meta.env.BROWSER)}
+            target="_blank"
+            rel="noreferrer"
+            title={`Baixar o .zip da versão ${latest}`}
+            data-testid="update"
+          >
+            <span class="version__dot" aria-hidden="true" />
+            Baixar versão {latest}
+          </a>
+        )}
+      </p>
+    </main>
+  );
+}
+
+interface PlayerProps {
+  settings: Settings;
+  update: (patch: Partial<Settings>) => void;
+}
+
+/** O controle em si; só existe com a extensão ligada, então só conecta à aba nesse caso. */
+function Player({ settings, update }: PlayerProps) {
   const {
     view,
     title,
@@ -45,13 +121,7 @@ export function App() {
   } = usePlayer();
 
   return (
-    <main class="popup">
-      <header class="header">
-        {/* Só a altura é fixa: a largura segue a proporção da imagem. */}
-        <img class="header__logo" src={logo} alt="" />
-        <h1 class="header__name">Netflix Nomad</h1>
-      </header>
-
+    <>
       {view.status === 'loading' && (
         <div class="empty" role="status">
           <span class="spinner" aria-hidden="true" />
@@ -95,6 +165,26 @@ export function App() {
         />
       )}
 
+      {/* Valem para qualquer título, então ficam visíveis mesmo sem vídeo. */}
+      <section class="card" aria-label="Preferências">
+        <Switch
+          label="Pular abertura automaticamente"
+          checked={settings.autoSkip}
+          onChange={(autoSkip) => {
+            update({ autoSkip });
+          }}
+          testId="auto-skip"
+        />
+        <Switch
+          label="Próximo episódio automático"
+          checked={settings.autoNext}
+          onChange={(autoNext) => {
+            update({ autoNext });
+          }}
+          testId="auto-next"
+        />
+      </section>
+
       {/* Sempre ativo: não depende de vídeo nem do estado da conexão. */}
       <button
         type="button"
@@ -110,7 +200,7 @@ export function App() {
           {ERROR_MESSAGES[nomadError]}
         </p>
       )}
-    </main>
+    </>
   );
 }
 

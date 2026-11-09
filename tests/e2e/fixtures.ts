@@ -16,8 +16,10 @@ const EXTENSION_PATH = path.resolve('.output/chrome-mv3');
  * /watch/1 e /watch/2 são os dois episódios de uma série; /watch/filme é um
  * filme, sem episódios nem marcas de abertura. Em /watch/sem-api não há
  * `window.netflix`, como se a Netflix mudasse a API. O `#nomad` é o elemento
- * que o Nomad Mode remove, `.player-timedtext` é a camada de legendas e
- * `#netflix-dialog` imita um botão da Netflix sob o HUD.
+ * que o Nomad Mode remove, `.player-timedtext` é a camada de legendas,
+ * `#netflix-dialog` imita um botão da Netflix sob o HUD e `#native-controls`,
+ * a barra da Netflix que o HUD esconde. Com `?lazy` na URL, os metadados do
+ * título só chegam depois de 1,5 s, como logo após trocar de episódio.
  */
 const WATCH_PAGE = `<!doctype html>
 <html><body>
@@ -26,6 +28,7 @@ const WATCH_PAGE = `<!doctype html>
 <button id="netflix-dialog" style="position: fixed; left: 40px; top: 300px"
   onclick="window.dialogClicks = (window.dialogClicks || 0) + 1">Continuar assistindo</button>
 <div id="nomad" class="netflix-sans-font-loaded"></div>
+<div id="native-controls" data-uia="controls-standard">Controles da Netflix</div>
 <script>
   // Áudio WAV de 20 min em silêncio, gerado aqui: tem duração de verdade,
   // que a linha do tempo precisa, e aceita mudar a velocidade.
@@ -79,6 +82,7 @@ const WATCH_PAGE = `<!doctype html>
     getTimeCodes: () => isMovie ? [] : [
       { type: 'recap', startOffsetMs: 0, endOffsetMs: 60000 },
       { type: 'start', startOffsetMs: 65000, endOffsetMs: 65000 },
+      { type: 'ending', startOffsetMs: 1100000, endOffsetMs: 1100000 },
     ],
     getAudioTrackList: () => audio,
     getAudioTrack: () => audioTrack,
@@ -97,12 +101,14 @@ const WATCH_PAGE = `<!doctype html>
           { id: 2, seq: 2, title: 'Episódio 2' },
         ] }],
       };
+  const lazy = location.search.includes('lazy');
+  const loadedAt = Date.now() + (lazy ? 1500 : 0);
   if (!location.pathname.includes('sem-api')) window.netflix = { appContext: { state: { playerApp: {
     getAPI: () => ({ videoPlayer: {
       getAllPlayerSessionIds: () => ['watch-1'],
       getVideoPlayerBySessionId: () => player,
     } }),
-    getState: () => ({ videoPlayer: { videoMetadata: {
+    getState: () => ({ videoPlayer: { videoMetadata: Date.now() < loadedAt ? {} : {
       [movieId]: { _metadataObject: { video } },
     } } }),
   } } } };

@@ -14,8 +14,10 @@ export default defineConfig({
     description:
       'Controles completos para o player da Netflix: sobre o vídeo e na barra do navegador.',
     // Sem `tabs`, `scripting` ou `notifications`: o acesso a netflix.com basta
-    // para ler a URL da aba e conversar com o content script.
-    permissions: [],
+    // para ler a URL da aba e conversar com o content script. `storage` guarda
+    // as preferências (ligada, pular abertura, próximo automático) e não gera
+    // aviso de permissão na instalação.
+    permissions: ['storage'],
     host_permissions: NETFLIX_MATCHES,
     // Script que o content script injeta na página para falar com o player.
     web_accessible_resources: [{ resources: ['netflix-api.js'], matches: NETFLIX_MATCHES }],

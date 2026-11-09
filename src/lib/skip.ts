@@ -10,6 +10,13 @@ export interface Skip {
   kind: 'recap' | 'intro';
   /** Para onde pular, em milissegundos. */
   targetMs: number;
+  /**
+   * `true` dentro de um intervalo marcado pela Netflix (recapitulação ou
+   * abertura). `false` quando só se sabe que o episódio começa mais adiante:
+   * o trecho até lá pode ter cena de verdade, então o pulo automático não o
+   * usa, só o botão.
+   */
+  marked: boolean;
 }
 
 /**
@@ -29,8 +36,10 @@ export function findSkip(timeCodes: TimeCode[], nowMs: number): Skip | null {
     const gap = start ? start.startOffsetMs - range.endOffsetMs : -1;
     const targetMs =
       start && gap >= 0 && gap <= CHAIN_GAP_MS ? start.startOffsetMs : range.endOffsetMs;
-    return { kind: range.type === 'recap' ? 'recap' : 'intro', targetMs };
+    return { kind: range.type === 'recap' ? 'recap' : 'intro', targetMs, marked: true };
   }
-  if (start && nowMs < start.startOffsetMs) return { kind: 'intro', targetMs: start.startOffsetMs };
+  if (start && nowMs < start.startOffsetMs) {
+    return { kind: 'intro', targetMs: start.startOffsetMs, marked: false };
+  }
   return null;
 }

@@ -137,6 +137,8 @@ export function readTitle({ player, video }: NetflixPage): TitleInfo {
   const index = episodes.findIndex((episode) => episode.id === currentEpisode);
 
   return {
+    movieId: player.getMovieId(),
+    complete: video !== undefined,
     title: video?.title ?? '',
     seasons,
     currentEpisode,
@@ -152,6 +154,21 @@ export function readTitle({ player, video }: NetflixPage): TitleInfo {
       endOffsetMs,
     })),
   };
+}
+
+/**
+ * O player do título em `wantedId` (o id da URL). Depois de trocar de
+ * episódio sem recarregar, a sessão do anterior pode continuar na lista;
+ * pegar sempre a última devolvia, às vezes, o episódio errado. Sem id na
+ * URL ou sem sessão daquele título, fica com a mais recente.
+ */
+export function pickPlayer(
+  players: NetflixPlayer[],
+  wantedId: number | null,
+): NetflixPlayer | undefined {
+  const match =
+    wantedId === null ? undefined : players.findLast((player) => player.getMovieId() === wantedId);
+  return match ?? players.at(-1);
 }
 
 function toTrack(track: NetflixTrack) {

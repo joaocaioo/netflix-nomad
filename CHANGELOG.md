@@ -2,6 +2,25 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versões seguem [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+
+- Botão de ligar e desligar no topo do popup. Desligada, a extensão sai da página na hora, sem recarregar: o HUD some, os controles da Netflix voltam e os atalhos param de responder.
+- **Pular abertura automaticamente** (desligado por padrão): pula recapitulação e abertura marcadas pela Netflix, uma vez por episódio, e avisa "Abertura pulada". Fica no popup e no painel de opções do HUD.
+- **Próximo episódio automático** (ligado por padrão): nos créditos aparece "A seguir", com contagem de 5 segundos e o botão "Assistir créditos" para cancelar. A contagem para com o vídeo pausado.
+- Aviso discreto de versão nova no pé do popup, que baixa direto o `.zip` do navegador em uso. Consulta o GitHub no máximo a cada 12 horas.
+
+### Alterado
+
+- Com a extensão ligada, os controles da própria Netflix (barra, voltar, pular abertura, próximo episódio, tela de pausa) ficam escondidos, para não aparecer um player sobre o outro. "Você ainda está assistindo?" e avisos de erro continuam aparecendo.
+- Nova permissão `storage`, para guardar as preferências. Não gera aviso na instalação.
+
+### Corrigido
+
+- Depois de trocar de episódio, o HUD perdia o nome da série, o episódio e os botões de anterior e próximo. Ele guardava a primeira resposta do player, que chega antes dos metadados do episódio, e não pedia de novo.
+- Depois de trocar de episódio sem recarregar, a extensão às vezes lia o player do episódio anterior.
+
 ## [1.1.0] - 2026-10-24
 
 ### Adicionado

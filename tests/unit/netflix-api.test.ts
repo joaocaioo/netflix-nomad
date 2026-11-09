@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   handleRequest,
+  pickPlayer,
   readTitle,
   resync,
   type NetflixPage,
@@ -63,6 +64,8 @@ describe('readTitle', () => {
   it('monta episódios, próximo episódio e faixas', () => {
     const title = readTitle({ player: fakePlayer(), video: SHOW });
     expect(title).toMatchObject({
+      movieId: 11,
+      complete: true,
       title: 'O Conto da Aia',
       currentEpisode: 11,
       previousEpisode: 10,
@@ -86,9 +89,29 @@ describe('readTitle', () => {
     expect(title.previousEpisode).toBe(11);
   });
 
+  it('sem metadados (episódio recém-trocado), vem incompleto', () => {
+    const title = readTitle({ player: fakePlayer(), video: undefined });
+    expect(title).toMatchObject({ movieId: 11, complete: false, title: '', nextEpisode: null });
+  });
+
   it('em filmes não há episódios', () => {
     const title = readTitle({ player: fakePlayer(), video: { title: 'Filme' } });
     expect(title).toMatchObject({ seasons: [], currentEpisode: null, nextEpisode: null });
+  });
+});
+
+describe('pickPlayer', () => {
+  const old = fakePlayer({ getMovieId: () => 10 });
+  const current = fakePlayer({ getMovieId: () => 11 });
+
+  it('prefere a sessão do título na URL, mesmo que não seja a última', () => {
+    expect(pickPlayer([current, old], 11)).toBe(current);
+  });
+
+  it('sem sessão do título da URL, fica com a mais recente', () => {
+    expect(pickPlayer([old, current], 99)).toBe(current);
+    expect(pickPlayer([old, current], null)).toBe(current);
+    expect(pickPlayer([], 11)).toBeUndefined();
   });
 });
 

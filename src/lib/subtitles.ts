@@ -1,3 +1,4 @@
+import { addPageStyle, setPageFlag } from './page-style';
 import { SELECTORS } from './selectors';
 
 /** Atributo no `<html>` que liga o deslocamento da legenda. */
@@ -21,18 +22,9 @@ ${SELECTORS.subtitles} {
 }`;
 
 export function installSubtitleLift(): void {
-  try {
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(CSS);
-    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
-  } catch {
-    // Firefox não aceita, na página, folhas criadas pelo content script.
-    const style = document.createElement('style');
-    style.textContent = CSS;
-    document.head.append(style);
-  }
+  addPageStyle(CSS);
 }
 
 export function setSubtitleLift(lifted: boolean): void {
-  document.documentElement.toggleAttribute(ATTRIBUTE, lifted);
+  setPageFlag(ATTRIBUTE, lifted);
 }
