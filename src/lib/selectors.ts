@@ -10,6 +10,29 @@ export const SELECTORS = {
   nomad: '.netflix-sans-font-loaded',
   /** Camada das legendas, que sobe quando o HUD aparece (ver `subtitles.ts`). */
   subtitles: '.player-timedtext',
+  /**
+   * Controles da própria Netflix que o HUD substitui e esconde enquanto está
+   * ativo (ver `native-controls.ts`). Por `data-uia` e classes `watch-video--`,
+   * que mudam menos que as classes geradas. Ficam de fora, de propósito, os
+   * avisos que pedem resposta, como "Você ainda está assistindo?".
+   */
+  nativeControls: [
+    // Barra inferior: play, linha do tempo, volume, episódios, legendas.
+    '[data-uia="controls-standard"]',
+    '.watch-video--bottom-controls-container',
+    // Voltar (canto superior esquerdo) e "Relatar problema" (direito).
+    '.watch-video--back-container',
+    '.watch-video--flag-container',
+    // "Pular abertura" / "Pular recapitulação".
+    '.watch-video--skip-content',
+    '[data-uia="player-skip-intro"]',
+    '[data-uia="player-skip-recap"]',
+    // "Próximo episódio" nos créditos.
+    '[data-uia="next-episode-seamless-button"]',
+    '[data-uia="next-episode-seamless-button-draining"]',
+    // Tela de informações que cobre o vídeo pausado.
+    '.watch-video--evidence-overlay-container',
+  ],
   /** O que conta como controle da própria Netflix sob o HUD. */
   pageControl: 'button, a[href], input, select, textarea, [role="button"], [role="link"]',
 } as const;

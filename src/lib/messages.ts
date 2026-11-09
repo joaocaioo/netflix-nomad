@@ -101,6 +101,14 @@ export interface TimeCode {
 }
 
 export interface TitleInfo {
+  /** Id do que o player está tocando: o episódio, em séries, ou o filme. */
+  movieId: number;
+  /**
+   * `false` enquanto os metadados (nome, temporadas) não chegaram. Logo
+   * depois de trocar de episódio o player já responde, mas sem eles: quem
+   * mostra o título deve pedir de novo até vir completo.
+   */
+  complete: boolean;
   title: string;
   /** Vazio em filmes. */
   seasons: Season[];

@@ -25,6 +25,8 @@ function fakeMedia(overrides: Partial<MediaLike> = {}): MediaLike {
 }
 
 const TITLE: TitleInfo = {
+  movieId: 1,
+  complete: true,
   title: 'Série',
   seasons: [],
   currentEpisode: 1,

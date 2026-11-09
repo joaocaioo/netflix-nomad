@@ -58,6 +58,7 @@ button:focus-visible {
 /* Cabeçalho: logo e nome, centralizados */
 
 .header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -82,6 +83,15 @@ button:focus-visible {
   /* Na Bebas, as maiúsculas ficam acima do centro da linha; desce para
      alinhar com o meio da logo. */
   transform: translateY(0.05em);
+}
+
+/* Liga/desliga no canto, sem tirar a marca do centro. */
+.header__end {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  display: flex;
+  transform: translateY(-50%);
 }
 
 .toast {
@@ -116,6 +126,11 @@ button:focus-visible {
   border-radius: 50%;
   background-color: rgba(187, 4, 22, 0.14);
   color: var(--brand);
+}
+
+.empty__icon--muted {
+  background-color: var(--bg-panel);
+  color: var(--text-muted);
 }
 
 .empty__icon .icon {
@@ -322,4 +337,44 @@ button:focus-visible {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+/* Versão e aviso de atualização: discretos, no pé do popup. */
+
+.version {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.version__update {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.version__update:hover {
+  color: var(--text-main);
+  text-decoration: underline;
+}
+
+.version__update:focus-visible {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.version__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(187, 4, 22, 0.25);
 }

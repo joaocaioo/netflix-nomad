@@ -24,3 +24,12 @@ export function isNetflixUrl(url: string | undefined): boolean {
 export function isWatchPath(pathname: string): boolean {
   return pathname.startsWith('/watch/');
 }
+
+/**
+ * Id do título na URL do player (`/watch/81234567` → `81234567`); `null`
+ * fora do player ou se o id não for numérico.
+ */
+export function watchId(pathname: string): number | null {
+  const match = /^\/watch\/(\d+)/.exec(pathname);
+  return match ? Number(match[1]) : null;
+}

@@ -1,7 +1,9 @@
 import { defineUnlistedScript } from 'wxt/utils/define-unlisted-script';
 import { serveBridge } from '@/lib/bridge';
+import { watchId } from '@/lib/netflix';
 import {
   handleRequest,
+  pickPlayer,
   type NetflixPage,
   type NetflixPlayer,
   type NetflixVideo,
@@ -53,9 +55,11 @@ function findPage(): NetflixPage | null {
     if (!netflix) return null;
     const { playerApp } = netflix.appContext.state;
     const { videoPlayer } = playerApp.getAPI();
-    const sessionId = videoPlayer.getAllPlayerSessionIds().at(-1);
-    if (sessionId === undefined) return null;
-    const player = videoPlayer.getVideoPlayerBySessionId(sessionId);
+    const players = videoPlayer
+      .getAllPlayerSessionIds()
+      .map((id) => videoPlayer.getVideoPlayerBySessionId(id));
+    const player = pickPlayer(players, watchId(location.pathname));
+    if (!player) return null;
     const metadata = playerApp.getState().videoPlayer.videoMetadata[player.getMovieId()];
     return { player, video: metadata?._metadataObject?.video };
   } catch {
