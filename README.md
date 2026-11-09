@@ -36,13 +36,14 @@ Quando esse aviso é removido na força bruta, o vídeo continua rodando no fund
 
 ### Sobre o vídeo
 
-Com o bloqueio removido, você recupera a navegação normal: basta mexer o mouse sobre o vídeo para os controles reaparecerem. Depois de 3 segundos parado, eles somem junto com o cursor.
+Com o bloqueio removido, você recupera a navegação normal: basta mexer o mouse sobre o vídeo para os controles reaparecerem. Depois de 3 segundos parado, eles somem junto com o cursor. Enquanto a extensão está ligada, os controles da própria Netflix ficam escondidos, para não aparecerem dois players um sobre o outro.
 
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/play.svg"><img src="docs/icons/light/play.svg" width="18" alt=""></picture> **Reproduzir e pausar**, também clicando em qualquer parte do vídeo
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/replay.svg"><img src="docs/icons/light/replay.svg" width="18" alt=""></picture> **Voltar e avançar 10 segundos**
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/timeline.svg"><img src="docs/icons/light/timeline.svg" width="18" alt=""></picture> **Linha do tempo navegável**: passe o mouse para ver o tempo, clique ou arraste para ir até lá
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/skip.svg"><img src="docs/icons/light/skip.svg" width="18" alt=""></picture> **Pular recapitulação e abertura**, só quando há o que pular
-- <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/next.svg"><img src="docs/icons/light/next.svg" width="18" alt=""></picture> **Episódio anterior e próximo**
+- <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/skip.svg"><img src="docs/icons/light/skip.svg" width="18" alt=""></picture> **Pular abertura automaticamente**: com a opção ligada, recapitulação e abertura são puladas sozinhas assim que começam, e aparece o aviso "Abertura pulada". Cada trecho é pulado uma vez por episódio, então dá para voltar e assistir a abertura se quiser. Vem desligada; ative no popup ou no painel de opções dos controles sobre o vídeo
+- <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/next.svg"><img src="docs/icons/light/next.svg" width="18" alt=""></picture> **Episódio anterior e próximo**; nos créditos, o próximo começa sozinho depois de 5 segundos (dá para desligar ou clicar em **Assistir créditos**)
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/episodes.svg"><img src="docs/icons/light/episodes.svg" width="18" alt=""></picture> **Qualquer episódio** de qualquer temporada
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/subtitles.svg"><img src="docs/icons/light/subtitles.svg" width="18" alt=""></picture> **Áudio e legendas**
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/volume.svg"><img src="docs/icons/light/volume.svg" width="18" alt=""></picture> **Volume e mudo**
@@ -55,6 +56,8 @@ Com o bloqueio removido, você recupera a navegação normal: basta mexer o mous
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/popup.svg"><img src="docs/icons/light/popup.svg" width="18" alt=""></picture> **Popup** com os mesmos controles, para usar sem tirar o vídeo da tela
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/nomad.svg"><img src="docs/icons/light/nomad.svg" width="18" alt=""></picture> **Nomad Mode**, botão rápido para remover o aviso de residência em qualquer página da Netflix
 - <picture><source media="(prefers-color-scheme: dark)" srcset="docs/icons/dark/keyboard.svg"><img src="docs/icons/light/keyboard.svg" width="18" alt=""></picture> **Atalhos do navegador**, configuráveis em `chrome://extensions/shortcuts`
+- **Liga e desliga** no topo do popup: desligada, a extensão sai da página na hora e a Netflix volta ao player original, sem recarregar
+- **Aviso de versão nova**, discreto, no pé do popup
 
 ## Instalação
 
@@ -76,7 +79,7 @@ Com o bloqueio removido, você recupera a navegação normal: basta mexer o mous
 
 ### Atualizar
 
-Baixe a versão nova, extraia por cima da pasta antiga, clique em ↻ no card da extensão em `chrome://extensions` e recarregue a aba da Netflix.
+Quando sai uma versão nova, o pé do popup mostra **Baixar versão x.y.z**, que baixa o `.zip` certo para o seu navegador. Baixe a versão nova, extraia por cima da pasta antiga, clique em ↻ no card da extensão em `chrome://extensions` e recarregue a aba da Netflix.
 
 ## Como usar
 
@@ -119,7 +122,9 @@ Voltar e avançar 10 segundos ficam sem tecla padrão. Para definir ou trocar as
 
 ## Privacidade
 
-O Netflix Nomad só acessa `netflix.com`. Ele não coleta, não guarda e não envia nenhum dado.
+O Netflix Nomad só acessa `netflix.com` e não coleta nem envia nenhum dado seu. As preferências (ligada, pular abertura, próximo automático) ficam só no seu navegador.
+
+Para avisar de versão nova, o popup consulta a [última Release pública](https://api.github.com/repos/joaocaioo/netflix-nomad/releases/latest) do GitHub, no máximo a cada 12 horas. O pedido não leva nada sobre você nem sobre o que você assiste.
 
 ## Desenvolvimento
 
